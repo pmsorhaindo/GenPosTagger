@@ -60,8 +60,8 @@ public class Viterbi implements IDecoder {
 		
 		// Assigning first label scores to the first column in the viterbi matrix
 		vit[0] = labelScores;
-		u.p("first vit:");
-		u.p(vit[0]);
+		//u.p("first vit:");
+		//u.p(vit[0]);
 		
 		for (int k = 0; k < numLabels; k++) {
 			// start marker for all labels
@@ -79,8 +79,8 @@ public class Viterbi implements IDecoder {
 				ArrayUtil.logNormalize(prevcurr[s]);
 				prevcurr[s] = ArrayUtil.add(prevcurr[s], labelScores[s]);
 			}
-			System.out.println("prevCurr "+t+":");
-			u.p(prevcurr);
+			//System.out.println("prevCurr "+t+":");
+			//u.p(prevcurr);
 			for (int s = 0; s < numLabels; s++) {
 				double[] sprobs = u.getColumn(prevcurr, s);
 				bptr[t][s] = ArrayUtil.argmax(sprobs); // u.nthLargest(2, sprobs);
@@ -89,7 +89,9 @@ public class Viterbi implements IDecoder {
 			System.out.println("bptr "+t+":");
 			u.p(bptr[t]);
 			labelScores = vit[t];
-		}
+            System.out.println("vit "+t+":");
+            u.p(vit[t]);
+        }
 		
 		this.probs = new ArrayList<>();
 		sentence.labels[T - 1] = ArrayUtil.argmax(vit[T - 1]);
