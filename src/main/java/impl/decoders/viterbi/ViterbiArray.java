@@ -114,55 +114,40 @@ public class ViterbiArray implements IDecoder {
 //            u.p(y);
 //        }
 
-        Tree.Node one = leaves.get(T-1).get(0);
-        Tree.Node two = one.getParent();
-        Tree.Node three = two.getParent();
-        Tree.Node four = three.getParent();
-        Tree.Node five = four.getParent();
-        Tree.Node six = five.getParent();
-        Tree.Node seven = six.getParent(); // NULL
 
-        System.out.println("§§§§§§");
-        u.p((double[]) one.getData());
-        u.p((double[]) two.getData());
-        u.p((double[]) three.getData());
-        u.p((double[]) four.getData());
-        u.p((double[]) five.getData());
-        u.p((double[]) six.getData());
-        //u.p((double[]) seven.getData());
-        System.out.println("§§§§§§");
-        u.p(ArrayUtil.argmax((double[]) one.getData()));
-        u.p(ArrayUtil.argmax((double[]) two.getData()));
-        u.p(ArrayUtil.argmax((double[]) three.getData()));
-        u.p(ArrayUtil.argmax((double[]) four.getData()));
-        u.p(ArrayUtil.argmax((double[]) five.getData()));
-        u.p(ArrayUtil.argmax((double[]) six.getData()));
-        //u.p(ArrayUtil.argmax((double[]) seven.getData()));
-        System.out.println("§§§§§§");
-        u.p((int[]) one.getPointers());
-        u.p((int[]) two.getPointers());
-        u.p((int[]) three.getPointers());
-        u.p((int[]) four.getPointers());
-        u.p((int[]) five.getPointers());
-        u.p((int[]) six.getPointers());
-        System.out.println("§§§§§§");
-
-        int resOne = ArrayUtil.argmax((double[]) one.getData());
-        int resTwo = one.getPointers()[resOne];
-        int resThree = two.getPointers()[resTwo];
-        int resFour = three.getPointers()[resThree];
-        int resFive = four.getPointers()[resFour];
-        int resSix = five.getPointers()[resFive];
-        int resSeven = six.getPointers()[resSix];
-
-        System.out.println("best back pointer:"+m.labelVocab.name(resOne)+resOne+","+m.labelVocab.name(resTwo)+resTwo+","+m.labelVocab.name(resThree)+resThree+","
-                +m.labelVocab.name(resFour)+resFour+","+m.labelVocab.name(resFive)+resFive+","+m.labelVocab.name(resSix)+resSix+","+resSeven);
-
-        u.p(leaves.size());
-        for(int i=0; i<leaves.size();i++) {
-            u.p(leaves.get(i).size());
+        Tree.Node[] nodes = new Tree.Node[T-1];
+        nodes[0] = leaves.get(T-1).get(0);
+        for (int i=1;i<T-1;i++)
+        {
+            nodes[i] = nodes[i-1].getParent();
         }
-        //[14, 6, 2, 4, 1, 7]
+        int[] labels = new int[T-1];
+        labels[0] = ArrayUtil.argmax((double[]) nodes[0].getData());
+        for (int i=1;i<T-1;i++)
+        {
+            labels[i] = nodes[i].getPointers()[i-1];
+        }
+
+//        Tree.Node one = leaves.get(T-1).get(0);
+//        Tree.Node two = one.getParent();
+//        Tree.Node three = two.getParent();
+//        Tree.Node four = three.getParent();
+//        Tree.Node five = four.getParent();
+//        Tree.Node six = five.getParent();
+//        Tree.Node seven = six.getParent(); // NULL
+//
+//        int resOne = ArrayUtil.argmax((double[]) one.getData());
+//        int resTwo = one.getPointers()[resOne];
+//        int resThree = two.getPointers()[resTwo];
+//        int resFour = three.getPointers()[resThree];
+//        int resFive = four.getPointers()[resFour];
+//        int resSix = five.getPointers()[resFive];
+//        int resSeven = six.getPointers()[resSix];
+//
+//        System.out.println("best back pointer:"+m.labelVocab.name(resOne)+resOne+","+m.labelVocab.name(resTwo)+resTwo+","+m.labelVocab.name(resThree)+resThree+","
+//                +m.labelVocab.name(resFour)+resFour+","+m.labelVocab.name(resFive)+resFive+","+m.labelVocab.name(resSix)+resSix+","+resSeven);
+        System.out.println(Arrays.toString(labels));
+        sentence.labels = labels;
 
     }
 	
