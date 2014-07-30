@@ -62,27 +62,21 @@ public class ViterbiArray implements IDecoder {
 		computeVitLabelScores(0, m.startMarker(), sentence, labelScores[0]);
 		ArrayUtil.logNormalize(labelScores[0]);
 
-
-
-
         // Assigning first label scores to the first column in the viterbi matrix
 		vit = labelScores[0];
-        Tree.Node<double[]> rootNode = new Tree.Node(vit);
-        rootNode.setPointers(origPointer);
+        Tree.Node<double[]> rootNode = new Tree.Node();
+        rootNode.setData(vit,origPointer);
         Tree t = new Tree(rootNode);
-        double[] x = new double[numLabels];
-        x = (double[]) t.getRoot().getData();
-        //u.p(x);
+
         ArrayList<Tree.Node> originalLeaf = new ArrayList<>();
         originalLeaf.add(rootNode);
         leaves.add(originalLeaf);
-        //oldLeaves.add(rootNode);
 
 
         for(int token = 1; token<T; token++) {
 
             ArrayList<Tree.Node> newLeaves = new ArrayList<>();
-            for (Tree.Node<double[]> prevPathStub: leaves.get(token-1))
+            for (Tree.Node<double[]> prevPathStub : leaves.get(token-1))
             {
                 double[][] prevcurr = new double[numLabels][numLabels];
                 for (int s = 0; s < numLabels; s++) {
@@ -90,7 +84,7 @@ public class ViterbiArray implements IDecoder {
                     computeVitLabelScores(token, s, sentence, prevcurr[s]);
                     //System.out.println("prevcurr[" + s + "] " + ArrayUtil.toString(prevcurr[s]));
                     ArrayUtil.logNormalize(prevcurr[s]);
-                    prevcurr[s] = ArrayUtil.add(prevcurr[s], prevPathStub.getData());
+                    prevcurr[s] = ArrayUtil.add(prevcurr[s], prevPathStub.getData()[s]);
                 }
 
                 for (int i = 0; i < this.N; i++) {
@@ -106,46 +100,63 @@ public class ViterbiArray implements IDecoder {
                     n.setData(newVit, newBptr);
                     prevPathStub.addChild(n);
                     newLeaves.add(n);
-                    System.out.println("*** " + n.toString());
+                    System.out.println("--- " + ArrayUtil.argmax((double[]) n.getData()));
+                    System.out.println("*** " + Arrays.toString(n.getPointers()));
                 }
             }
             leaves.add(newLeaves);
-            System.out.println("size:"+leaves.size());
-            //oldLeaves.clear();
-            //oldLeaves.addAll(leaves.get(token));
-            //if(token != T-1) leaves.clear();
+            System.out.println("size:"+newLeaves.size());
 
         }
-        for (int i = 0; i <leaves.get(leaves.size()-1).size(); i++){ //Tree.Node<double[]> i : leaves) {
-            double[] y = new double[numLabels];
-            y = (double[]) leaves.get(leaves.size()-1).get(i).getData();
-            u.p(y);
-        }
-
-        double[] arr = (double[]) leaves.get(T-1).get(0).getData();
-        int resOne = ArrayUtil.argmax(arr);
+//        for (int i = 0; i <leaves.get(leaves.size()-1).size(); i++){ //Tree.Node<double[]> i : leaves) {
+//            double[] y = new double[numLabels];
+//            y = (double[]) leaves.get(leaves.size()-1).get(i).getData();
+//            u.p(y);
+//        }
 
         Tree.Node one = leaves.get(T-1).get(0);
         Tree.Node two = one.getParent();
         Tree.Node three = two.getParent();
         Tree.Node four = three.getParent();
+        Tree.Node five = four.getParent();
+        Tree.Node six = five.getParent();
+        Tree.Node seven = six.getParent(); // NULL
 
         System.out.println("§§§§§§");
         u.p((double[]) one.getData());
+        u.p((double[]) two.getData());
+        u.p((double[]) three.getData());
+        u.p((double[]) four.getData());
+        u.p((double[]) five.getData());
+        u.p((double[]) six.getData());
+        //u.p((double[]) seven.getData());
         System.out.println("§§§§§§");
-
-
+        u.p(ArrayUtil.argmax((double[]) one.getData()));
+        u.p(ArrayUtil.argmax((double[]) two.getData()));
+        u.p(ArrayUtil.argmax((double[]) three.getData()));
+        u.p(ArrayUtil.argmax((double[]) four.getData()));
+        u.p(ArrayUtil.argmax((double[]) five.getData()));
+        u.p(ArrayUtil.argmax((double[]) six.getData()));
+        //u.p(ArrayUtil.argmax((double[]) seven.getData()));
+        System.out.println("§§§§§§");
         u.p((int[]) one.getPointers());
         u.p((int[]) two.getPointers());
         u.p((int[]) three.getPointers());
         u.p((int[]) four.getPointers());
+        u.p((int[]) five.getPointers());
+        u.p((int[]) six.getPointers());
+        System.out.println("§§§§§§");
 
-        int resTwo = two.getPointers()[resOne];
-        int resThree = three.getPointers()[resTwo];
-        int resFour = four.getPointers()[resThree];
+        int resOne = ArrayUtil.argmax((double[]) one.getData());
+        int resTwo = one.getPointers()[resOne];
+        int resThree = two.getPointers()[resTwo];
+        int resFour = three.getPointers()[resThree];
+        int resFive = four.getPointers()[resFour];
+        int resSix = five.getPointers()[resFive];
+        int resSeven = six.getPointers()[resSix];
 
-        System.out.println("best back pointer:"+resOne+","+resTwo+","+resThree+","+resFour);
-
+        System.out.println("best back pointer:"+m.labelVocab.name(resOne)+resOne+","+m.labelVocab.name(resTwo)+resTwo+","+m.labelVocab.name(resThree)+resThree+","
+                +m.labelVocab.name(resFour)+resFour+","+m.labelVocab.name(resFive)+resFive+","+m.labelVocab.name(resSix)+resSix+","+resSeven);
 
         u.p(leaves.size());
         for(int i=0; i<leaves.size();i++) {
