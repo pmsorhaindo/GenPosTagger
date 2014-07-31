@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Created by ps324 on 29/07/2014.
  */
-public class main {
+public class Main {
 
     public static void main(String[] args) throws IOException {
 
@@ -20,7 +20,7 @@ public class main {
         p.printHelpfileAndOptions();
 
         Sentence s = new Sentence();
-        File f = new File("src/main/resources/daily547.conll");
+        File f = new File("src/Main/resources/daily547.conll");
         CoNLLReader c = new CoNLLReader(f, "form, pos");
 
         //p.parseSentence(s);

@@ -11,14 +11,14 @@ import util.Tree;
 import util.Util;
 import edu.berkeley.nlp.util.ArrayUtil;
 
-public class ViterbiArray implements IDecoder {
+public class ViterbiArrayTree implements IDecoder {
 	
 	private Model m;
 	private int numLabels;
 	private int N;
 	private Util u;
 	
-	public ViterbiArray(Model m){
+	public ViterbiArrayTree(Model m){
 		
 		this.N = 2;
 		this.u = new Util();

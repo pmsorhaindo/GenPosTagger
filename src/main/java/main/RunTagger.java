@@ -5,7 +5,8 @@ import impl.Sentence;
 import impl.decoders.IDecoder;
 import impl.decoders.greedy.Greedy;
 import impl.decoders.viterbi.Viterbi;
-import impl.decoders.viterbi.ViterbiArray;
+import impl.decoders.viterbi.ViterbiArrayEfficient;
+import impl.decoders.viterbi.ViterbiArrayTree;
 import impl.decoders.viterbi.ViterbiNBest;
 import impl.features.WordClusterPaths;
 import io.CoNLLReader;
@@ -46,8 +47,8 @@ public class RunTagger {
 	public boolean noOutput = false;
 	public boolean justTokenize = false;
 	
-	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST };
-	public Decoder decoder = Decoder.VITERBIARRAY;
+	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF };
+	public Decoder decoder = Decoder.VITERBIEFF;
 	public boolean showConfidence = true;
 
 	PrintStream outputStream;
@@ -177,7 +178,7 @@ public class RunTagger {
 			// if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
 			//System.out.println("Running VITERBIARRAY decode()");
 			//tagger.model.viterbiDecode(mSent);
-			IDecoder diverge = new ViterbiArray(tagger.model);
+			IDecoder diverge = new ViterbiArrayTree(tagger.model);
 			diverge.decode(mSent);
 			// tagger.model.splitViterbiDecode(mSent);
 		}
@@ -189,6 +190,14 @@ public class RunTagger {
 			diverge.decode(mSent);
 			// tagger.model.splitViterbiDecode(mSent);
 		}
+        else if (decoder == Decoder.VITERBIEFF) {
+            // if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
+            //System.out.println("Running VITERBIARRAY decode()");
+            //tagger.model.viterbiDecode(mSent);
+            IDecoder diverge = new ViterbiArrayEfficient(tagger.model);
+            diverge.decode(mSent);
+            // tagger.model.splitViterbiDecode(mSent);
+        }
 		
 	}
 	
