@@ -4,7 +4,6 @@ import edu.berkeley.nlp.util.ArrayUtil;
 import impl.Model;
 import impl.ModelSentence;
 import impl.decoders.IDecoder;
-import util.Tree;
 import util.Util;
 
 import java.util.ArrayList;
@@ -41,41 +40,41 @@ public class ViterbiArrayEfficient implements IDecoder {
 	
 	
 	public void viterbiArrayDecode(ModelSentence sentence) {
-        // Initialization
-        int T = sentence.T; // Number of tokens to be tagged.
+		// Initialization
+		int T = sentence.T; // Number of tokens to be tagged.
         double[][] labelScores = new double[N][numLabels];
 
         computeVitLabelScores(0, m.startMarker(), sentence, labelScores[0]);
         ArrayUtil.logNormalize(labelScores[0]);
-//        computeVitLabelScores(0, m.startMarker(), sentence, labelScores[1]);
-//        ArrayUtil.logNormalize(labelScores[1]);
+        computeVitLabelScores(0, m.startMarker(), sentence, labelScores[1]);
+        ArrayUtil.logNormalize(labelScores[1]);
 
         int[][] origPointer = new int[N][numLabels];
+        int[][] pOffset = new int[N][numLabels];
         for (int k = 0; k < numLabels; k++) {
             origPointer[0][k] = m.startMarker();
+            pOffset[0][k] = 0;
         }
 
         ArrayList<WordData> tokens = new ArrayList<>();
         tokens.add(new WordData());
         tokens.get(0).setData(labelScores);
         int[] dOffset = new int[numLabels];
-        Arrays.fill(dOffset, 0);
+        Arrays.fill(dOffset,0);
         tokens.get(0).setDataOffset(dOffset);
         tokens.get(0).setPointer(origPointer);
-        int[] pOffset = new int[numLabels];
-        Arrays.fill(pOffset, 0);
+        Arrays.fill(pOffset[0],0);
         tokens.get(0).setPointerOffset(pOffset);
 
         // First word
 
-        for(int a =1; a<T;a++) {
         double[][] prevcurr = new double[numLabels][numLabels];
         for (int s = 0; s < numLabels; s++) {
             //System.out.println("labelScores[" + s + "]" + labelScores[0][s]);
-            computeVitLabelScores(a, s, sentence, prevcurr[s]);
+            computeVitLabelScores(1, s, sentence, prevcurr[s]);
             //System.out.println("prevcurr[" + s + "] " + ArrayUtil.toString(prevcurr[s]));
             ArrayUtil.logNormalize(prevcurr[s]);
-            prevcurr[s] = ArrayUtil.add(prevcurr[s], tokens.get(a-1).getData()[0]);
+            prevcurr[s] = ArrayUtil.add(prevcurr[s], tokens.get(0).getData()[0]);
         }
         System.out.println("prevCurr 1");
         //u.p(prevcurr);
@@ -89,32 +88,32 @@ public class ViterbiArrayEfficient implements IDecoder {
             //u.p(sprobs);
         }
 
+        for(int h =1; h<T; h++) {
+            int[][] offsetStore = new int[N][numLabels];
+            for (int i = 0; i < N; i++) {
+                int[] labelOffSetCounter = new int[numLabels];
 
-        int[] offSetCounter = new int[numLabels];
-        Arrays.fill(offSetCounter, 0);
-        for (int i = 1; i < N; i++) {
-            int[] offsetStore = new int[numLabels];
-            offsetStore = tokens.get(0).getDataOffset();
-            for (int s = 0; s < numLabels; s++) {
-                double[] sprobs = u.getColumn(prevcurr, s);
+                for (int s = 0; s < numLabels; s++) {
+                    double[] sprobs = u.getColumn(prevcurr, s);
+                    if (h == 1 || N == 0) { //tokens.get(0).getDataOffset()[ArrayUtil.argmax(sprobs)]
+                        System.out.println("argmaxing!");
+                        bptr[i][s] = ArrayUtil.argmax(sprobs);
+                        vit[i][s] = sprobs[bptr[i][s]];
+                    } else {
+                        labelOffSetCounter[s] = labelOffSetCounter[s]+1;
+                        // TODO replace and arg max
+                        bptr[i][s] = u.nthLargest(labelOffSetCounter[s] + 1, sprobs); // i+1 of some nth thing above ????
+                        vit[i][s] = sprobs[bptr[i][s]];
+                    }
 
-                if (offsetStore[s] > 0) { //tokens.get(0).getDataOffset()[ArrayUtil.argmax(sprobs)]
-                    bptr[i][s] = ArrayUtil.argmax(sprobs); // TODO check bptr assignments is ok might need to ref which offset! (maybe remove the for loop and make a = 1 and a-1 = 0 )
-                    vit[i][s] = sprobs[bptr[i][s]];
-                    offsetStore[s] = offsetStore[s] - 1;
-                } else {
-                    //int nth = offSetCounter[s]-N;
-                    bptr[i][s] = u.nthLargest(2, sprobs); // i+1 of some nth thing above ????
-                    vit[i][s] = sprobs[bptr[i][s]];
                 }
+                offsetStore[i]= labelOffSetCounter;
             }
+            tokens.add(new WordData());
+            tokens.get(h).setData(vit);
+            tokens.get(h).setPointer(bptr);
 
         }
-
-        tokens.add(new WordData());
-        tokens.get(a).setData(vit);
-        tokens.get(a).setPointer(bptr);
-    }
 
         tokens.get(0).print();
         tokens.get(1).print();
@@ -125,9 +124,7 @@ public class ViterbiArrayEfficient implements IDecoder {
         System.out.println("suuup!?!");
 
     }
-	
-	
-	
+
 	// TODO remove
 	public void computeVitLabelScores(int t, int prior, ModelSentence sentence,
 			double[] labelScores) {
@@ -155,7 +152,8 @@ public class ViterbiArrayEfficient implements IDecoder {
         double[][] data = new double[N][numLabels];
         int[] dataOffset = new int[N];
         int[][] pointer = new int[N][numLabels];
-        int[] pointerOffset = new int[N];
+        int[][] pointerOffset = new int[N][numLabels];
+        int[] pointerOffsetOld = new int[N];
 
         public WordData(){
 
@@ -185,14 +183,21 @@ public class ViterbiArrayEfficient implements IDecoder {
             this.pointer = pointer;
         }
 
-        public int[] getPointerOffset() {
+        public int[] getPointerOffsetOld() {
+            return pointerOffsetOld;
+        }
+
+        public void setPointerOffsetOld(int[] pointerOffsetOld) {
+            this.pointerOffsetOld = pointerOffsetOld;
+        }
+
+        public int[][] getPointerOffset() {
             return pointerOffset;
         }
 
-        public void setPointerOffset(int[] pointerOffset) {
+        public void setPointerOffset(int[][] pointerOffset) {
             this.pointerOffset = pointerOffset;
         }
-
 
         public void print(){
             u.p(this.data);
