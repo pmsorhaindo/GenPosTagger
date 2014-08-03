@@ -474,7 +474,8 @@ public class RunTagger {
 		if (args.length - i > 1) usage();
 		if (args.length == i || args[i].equals("-")) {
 			System.err.println("Listening on stdin for input.  (-h for help)");
-			tagger.inputFilename = new Scanner(System.in).nextLine();
+			//tagger.inputFilename = new Scanner(System.in).nextLine(); // TODO replace for changable file name on running
+            tagger.inputFilename = "/Volumes/LocalDataHD/ps324/tweets";
 		} else {
 			tagger.inputFilename = args[i];
 		}

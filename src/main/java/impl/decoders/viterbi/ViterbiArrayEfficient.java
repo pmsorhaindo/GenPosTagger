@@ -67,6 +67,10 @@ public class ViterbiArrayEfficient implements IDecoder {
             tokens.add(new WordData());
 
             double[][] prevcurr = new double[numLabels][numLabels];
+            int bptr[][] = new int[N][numLabels];
+            double vit[][] = new double[N][numLabels];
+            int[][] offsetStore = new int[N][numLabels];
+
             for (int s = 0; s < numLabels; s++) {
                 //System.out.println("labelScores[" + s + "]" + labelScores[0][s]);
                 computeVitLabelScores(h, s, sentence, prevcurr[s]);
@@ -75,10 +79,6 @@ public class ViterbiArrayEfficient implements IDecoder {
                 prevcurr[s] = ArrayUtil.add(prevcurr[s], tokens.get(h-1).getData()[0]);
             }
 
-            int bptr[][] = new int[N][numLabels];
-            double vit[][] = new double[N][numLabels];
-            int[][] offsetStore = new int[N][numLabels];
-
             for (int i = 0; i < N; i++) {
                 int[] labelOffSetCounter = new int[numLabels];
                 for (int s = 0; s < numLabels; s++) {
@@ -86,20 +86,32 @@ public class ViterbiArrayEfficient implements IDecoder {
                     if (i == 0) {
                         bptr[i][s] = ArrayUtil.argmax(sprobs);
                         vit[i][s] = sprobs[bptr[i][s]];
-                    } else {
-                        labelOffSetCounter[s] = labelOffSetCounter[s] + 1;
-                        // TODO replace and arg max
-                        bptr[i][s] = u.nthLargest(labelOffSetCounter[s] + 1, sprobs); // i+1 of some nth thing above ????
-                        vit[i][s] = sprobs[bptr[i][s]];
+                        labelOffSetCounter[s] = i+1;
                     }
+                    else if(tokens.get(h-1).getPointerOffset()[i][s]>i) {
+                        System.out.println("swap value out");
+                        computeVitLabelScores(h, s, sentence, prevcurr[s]);
+                        ArrayUtil.logNormalize(prevcurr[s]);
+                        double[] prevcurrline = ArrayUtil.add(prevcurr[s], tokens.get(h-1).getData()[i]);
+                        double[] sprobsTemp = sprobs.clone();
+                        sprobsTemp[ArrayUtil.argmax(sprobs)] = prevcurrline[s]; // or ArrayUtil.argmax(sprobs)
 
+                        bptr[i][s] = ArrayUtil.argmax(sprobsTemp); // i+1 of some nth thing above ????
+                        vit[i][s] = sprobsTemp[bptr[i][s]];
+                        labelOffSetCounter[s] = i+1;
+                    }
+                    else {
+                        System.out.println("special!");
+                        bptr[i][s] = u.nthLargest(i+1, sprobs); // i+1 of some nth thing above ????
+                        vit[i][s] = sprobs[bptr[i][s]];
+                        labelOffSetCounter[s] = i+1;
+                    }
                 }
                 offsetStore[i] = labelOffSetCounter;
             }
-
             tokens.get(h).setData(vit);
             tokens.get(h).setPointer(bptr);
-
+            tokens.get(h).setPointerOffset(offsetStore);
         }
 
         tokens.get(0).print();
@@ -108,8 +120,24 @@ public class ViterbiArrayEfficient implements IDecoder {
         tokens.get(3).print();
         tokens.get(4).print();
 
-        System.out.println("suuup!?!");
 
+        sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T-1).getData()[0]);
+        System.out.println("***" + m.labelVocab.name(sentence.labels[T - 1]));
+//        double prob = vit[T - 1][sentence.labels[T - 1]]; //Math.exp(vit[T - 1][sentence.labels[T - 1]]);
+//        System.out.println(" with prob: " + prob);
+//        this.probs.add(prob);
+
+        int backtrace = tokens.get(T-1).getPointer()[0][sentence.labels[T - 1]];
+        for (int i = T - 2; (i >= 0) && (backtrace != m.startMarker()); i--) { // termination
+            sentence.labels[i] = backtrace;
+//            double newProb = vit[i][backtrace]; //Math.exp(vit[i][backtrace]);
+            System.out.println("***" + m.labelVocab.name(backtrace));
+//                    + " with prob: " + newProb);
+//            this.probs.add(newProb);
+            backtrace = tokens.get(i).getPointer()[0][backtrace];
+        }
+        System.out.println("asd: " +m.labelVocab.name(backtrace)+":"+backtrace);
+        assert (backtrace == m.startMarker());
     }
 
     // TODO remove
@@ -188,6 +216,7 @@ public class ViterbiArrayEfficient implements IDecoder {
 
         public void print() {
             u.p(this.data);
+            u.p(this.pointer);
         }
 
     }
