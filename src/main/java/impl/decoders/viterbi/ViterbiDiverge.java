@@ -98,7 +98,7 @@ public class ViterbiDiverge implements IDecoder {
 			bptr[0][k] = m.startMarker();
 		}
 
-		// System.out.println("Initial back pointer array: " + priArr(bptr[0]));
+		// System.out.println("Initial back tagPointer array: " + priArr(bptr[0]));
 
 		// Calculate viterbi scores
 		for (int t = 1; t < T; t++) {

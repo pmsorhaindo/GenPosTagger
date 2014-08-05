@@ -4,10 +4,7 @@ import impl.ModelSentence;
 import impl.Sentence;
 import impl.decoders.IDecoder;
 import impl.decoders.greedy.Greedy;
-import impl.decoders.viterbi.Viterbi;
-import impl.decoders.viterbi.ViterbiArrayEfficient;
-import impl.decoders.viterbi.ViterbiArrayTree;
-import impl.decoders.viterbi.ViterbiNBest;
+import impl.decoders.viterbi.*;
 import impl.features.WordClusterPaths;
 import io.CoNLLReader;
 import io.JsonTweetReader;
@@ -194,7 +191,7 @@ public class RunTagger {
             // if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
-            IDecoder diverge = new ViterbiArrayEfficient(tagger.model);
+            IDecoder diverge = new ViterbiTableEfficient(tagger.model);
             diverge.decode(mSent);
             // tagger.model.splitViterbiDecode(mSent);
         }

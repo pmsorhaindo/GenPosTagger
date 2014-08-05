@@ -144,7 +144,7 @@ public class ViterbiArrayTree implements IDecoder {
 //        int resSix = five.getPointers()[resFive];
 //        int resSeven = six.getPointers()[resSix];
 //
-//        System.out.println("best back pointer:"+m.labelVocab.name(resOne)+resOne+","+m.labelVocab.name(resTwo)+resTwo+","+m.labelVocab.name(resThree)+resThree+","
+//        System.out.println("best back tagPointer:"+m.labelVocab.name(resOne)+resOne+","+m.labelVocab.name(resTwo)+resTwo+","+m.labelVocab.name(resThree)+resThree+","
 //                +m.labelVocab.name(resFour)+resFour+","+m.labelVocab.name(resFive)+resFive+","+m.labelVocab.name(resSix)+resSix+","+resSeven);
         System.out.println(Arrays.toString(labels));
         sentence.labels = labels;

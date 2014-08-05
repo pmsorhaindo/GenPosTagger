@@ -90,7 +90,7 @@ public class ViterbiArrayEfficient implements IDecoder {
                         vit[i][s] = sprobs[bptr[i][s]];
                         labelOffSetCounter[s] = i;
                     }
-                    else { //if(tokens.get(h-1).getPointerOffset()[i][s]>i) {
+                    else { //if(tokens.get(h-1).getTagVersionPointer()[i][s]>i) {
                         //System.out.println("swap value out");
                         computeVitLabelScores(h, s, sentence, prevcurr[s]);
                         ArrayUtil.logNormalize(prevcurr[s]);
