@@ -18,7 +18,7 @@ public class ViterbiTableEfficient implements IDecoder {
 
     public ViterbiTableEfficient(Model m) {
 
-        this.N = 5;
+        this.N = 3;
         this.u = new Util();
         this.m = m;
         this.numLabels = m.labelVocab.size();
@@ -103,6 +103,8 @@ public class ViterbiTableEfficient implements IDecoder {
                             maxTag = u.nthLargest(nextHighestFreeTag, sprobs);
                             if(labelUsageCounter[maxTag]<N-1)
                             {
+                                System.out.println("readj");
+
                                 int usage = labelUsageCounter[maxTag];
                                 //System.out.println(i+":"+j+":"+usage+":"+s);
                                 double[] prevcurrline = ArrayUtil.add(prevcurr[s], tokens.get(i-1).getData()[usage][s]);
@@ -112,8 +114,9 @@ public class ViterbiTableEfficient implements IDecoder {
                                 labelUsageCounter[maxTag]++;
                                 found = true;
                             }
-                            else if(nextHighestFreeTag+1 >= numLabels)
+                            else if(nextHighestFreeTag+1 > numLabels)
                             {
+                                System.err.println("Ran out of Tags");
                                 break;
                             }
                             else
@@ -123,7 +126,7 @@ public class ViterbiTableEfficient implements IDecoder {
                         }
                     }
                 }
-                u.p(labelUsageCounter);
+                //u.p(labelUsageCounter);
             }
 
             tokens.get(i).setData(vit);
@@ -131,7 +134,7 @@ public class ViterbiTableEfficient implements IDecoder {
             tokens.get(i).setTagVersionPointer(tagVPointers);
         }
 
-        int k = 3;
+        int k = 2;
 
         sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T-1).getData()[k]);
         System.out.println("***" + m.labelVocab.name(sentence.labels[T - 1]));
