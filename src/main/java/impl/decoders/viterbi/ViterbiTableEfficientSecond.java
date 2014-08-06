@@ -9,14 +9,14 @@ import util.Util;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class ViterbiTableEfficient implements IDecoder {
+public class ViterbiTableEfficientSecond implements IDecoder {
 
     private Model m;
     private int numLabels;
     private int N;
     private Util u;
 
-    public ViterbiTableEfficient(Model m) {
+    public ViterbiTableEfficientSecond(Model m) {
 
         this.N = 3;
         this.u = new Util();
@@ -68,6 +68,7 @@ public class ViterbiTableEfficient implements IDecoder {
             double[][] vit = new double[N][numLabels];
             int[][] tagPointers = new int[N][numLabels];
             int[][] tagVPointers = new int[N][numLabels];
+            double[][] sprobs = new double[numLabels][numLabels];
 
             for (int s = 0; s < numLabels; s++) {
                 computeVitLabelScores(i, s, sentence, prevcurr[s]);
@@ -75,27 +76,31 @@ public class ViterbiTableEfficient implements IDecoder {
                 prevcurr[s] = ArrayUtil.add(prevcurr[s], tokens.get(i-1).getData()[0][s]);
             }
 
+            for(int s = 0; s<numLabels; s++)
+            {
+                sprobs[s] = u.getColumn(prevcurr, s);
+            }
+
             int[] labelUsageCounter = new int[numLabels];
-            for (int s = 0; s < numLabels; s++) {
-                for (int j = 0; j < N; j++) {
-                    double[] sprobs = u.getColumn(prevcurr, s);
-                    int maxTag = ArrayUtil.argmax(sprobs);
+            for (int j = 0; j < N; j++) {
+                for (int s = 0; s < numLabels; s++) {
+                    int maxTag = ArrayUtil.argmax(sprobs[s]);
 
                     // IF NO USAGE OF MOST LIKELY TAG ARGMAX AS NORMAL VITERBI APPROACH
                     if(labelUsageCounter[maxTag] == 0)
                     {
                         tagPointers[j][s] = maxTag;
 
-                        vit[j][s] = sprobs[tagPointers[j][s]];
+                        vit[j][s] = sprobs[s][tagPointers[j][s]];
                         tagVPointers[j][s] = labelUsageCounter[maxTag];
                         labelUsageCounter[maxTag]++;
                     }
                     /*else if(i==1)
                     {
-                        maxTag = u.nthLargest(j+1,sprobs);
+                        maxTag = u.nthLargest(j+1,sprobs[s]);
                         tagPointers[j][s] = maxTag;
 
-                        vit[j][s] = sprobs[tagPointers[j][s]];
+                        vit[j][s] = sprobs[s][tagPointers[j][s]];
                         tagVPointers[j][s] = labelUsageCounter[maxTag];
                         labelUsageCounter[maxTag]++;
                     }*/
@@ -104,37 +109,30 @@ public class ViterbiTableEfficient implements IDecoder {
                         if (labelUsageCounter[maxTag] < N) {
                             int usage = labelUsageCounter[maxTag];
 
-                            double[] prevCurrLine = ArrayUtil.add(prevcurr[s], tokens.get(i - 1).getData()[usage][s]);
+                            double[] prevCurrLine = ArrayUtil.add(prevcurr[s], tokens.get(i - 1).getData()[usage][maxTag]);
 
-                            sprobs[s] = prevCurrLine[s];
-                            tagPointers[j][s] = ArrayUtil.argmax(sprobs);
+                            sprobs[s][maxTag] = prevCurrLine[maxTag];
+                            tagPointers[j][s] = ArrayUtil.argmax(sprobs[s]);
 
-                            vit[j][s] = sprobs[tagPointers[j][s]];
+                            vit[j][s] = sprobs[s][tagPointers[j][s]];
                             tagVPointers[j][s] = labelUsageCounter[maxTag];
                             labelUsageCounter[maxTag]++;
                         }
 
                         else {
-                            System.out.println("readj");
                             boolean found = false;
                             int nextHighestFreeTag = 2;
                             while (!found) {
-                                maxTag = u.nthLargest(nextHighestFreeTag, sprobs);
+                                maxTag = u.nthLargest(nextHighestFreeTag, sprobs[s]);
+
                                 if (labelUsageCounter[maxTag] < N) {
                                     int usage = labelUsageCounter[maxTag];
-                                    double[] prevCurrLine = ArrayUtil.add(prevcurr[s], tokens.get(i - 1).getData()[usage][s]);
+                                    double[] prevCurrLine = ArrayUtil.add(prevcurr[s], tokens.get(i - 1).getData()[usage][maxTag]);
 
-                                    u.p(s);
-                                    u.p(sprobs);
+                                    sprobs[s][maxTag] = prevCurrLine[maxTag];
+                                    tagPointers[j][s] = ArrayUtil.argmax(sprobs[s]);
 
-                                    sprobs[s] = prevCurrLine[s];
-                                    tagPointers[j][s] = ArrayUtil.argmax(sprobs);
-
-
-                                    u.p(sprobs);
-                                    u.p(ArrayUtil.argmax(sprobs));
-
-                                    vit[j][s] = sprobs[tagPointers[j][s]];
+                                    vit[j][s] = sprobs[s][tagPointers[j][s]];
                                     tagVPointers[j][s] = labelUsageCounter[maxTag];
                                     labelUsageCounter[maxTag]++;
 
@@ -153,21 +151,24 @@ public class ViterbiTableEfficient implements IDecoder {
             }
             //u.p(labelUsageCounter);
             u.p(tagPointers);
+            u.p(vit);
             tokens.get(i).setData(vit);
             tokens.get(i).setTagPointer(tagPointers);
             tokens.get(i).setTagVersionPointer(tagVPointers);
         }
 
-        int k = 0;
+        int k =0;
 
         sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T-1).getData()[k]);
         System.out.println("***" + m.labelVocab.name(sentence.labels[T - 1]));
-        int backtrace = tokens.get(T-1).getTagPointer() [tokens.get(T-1).getTagVersionPointer()[k][sentence.labels[T - 1]]] [sentence.labels[T - 1]];
+        int vPointer = tokens.get(T-1).getTagVersionPointer()[k][sentence.labels[T - 1]];
+        int backtrace = tokens.get(T-1).getTagPointer() [vPointer] [sentence.labels[T - 1]];
 
         for (int i = T - 2; (i >= 0) && (backtrace != m.startMarker()); i--) { // termination
             sentence.labels[i] = backtrace;
             System.out.println("***" + m.labelVocab.name(backtrace));
-            backtrace = tokens.get(i).getTagPointer() [tokens.get(i).getTagVersionPointer()[k][backtrace]] [backtrace];
+            vPointer = tokens.get(i).getTagVersionPointer()[k][backtrace];
+            backtrace = tokens.get(i).getTagPointer() [vPointer] [backtrace];
         }
 
     }

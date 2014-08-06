@@ -46,7 +46,7 @@ public class RunTagger {
 	
 	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF };
 	public Decoder decoder = Decoder.VITERBIEFF;
-	public boolean showConfidence = true;
+	public boolean showConfidence = false;
 
 	PrintStream outputStream;
 	Iterable<Sentence> inputIterable = null;
@@ -191,7 +191,7 @@ public class RunTagger {
             // if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
-            IDecoder diverge = new ViterbiTableEfficient(tagger.model);
+            IDecoder diverge = new ViterbiTableEfficientSecond(tagger.model);
             diverge.decode(mSent);
             // tagger.model.splitViterbiDecode(mSent);
         }

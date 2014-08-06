@@ -57,7 +57,9 @@ public class Util {
 	
 	
 	public int nthLargest(int n, double[] inputArr){
-		
+
+        if(n<=0 || n>inputArr.length) return -1;
+
 		double[] record = new double[n];
 		Arrays.fill(record, Double.NEGATIVE_INFINITY);
 		
