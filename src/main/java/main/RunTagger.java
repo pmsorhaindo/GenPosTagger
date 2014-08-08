@@ -191,7 +191,7 @@ public class RunTagger {
             // if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
-            IDecoder diverge = new ViterbiTableEfficientSecond(tagger.model);
+            IDecoder diverge = new ViterbiTableEfficientThird(tagger.model);
             diverge.decode(mSent);
             // tagger.model.splitViterbiDecode(mSent);
         }

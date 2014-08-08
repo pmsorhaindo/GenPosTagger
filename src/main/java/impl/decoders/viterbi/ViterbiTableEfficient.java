@@ -160,7 +160,7 @@ public class ViterbiTableEfficient implements IDecoder {
 
         int k = 0;
 
-        sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T-1).getData()[k]);
+        sentence.labels[T - 1] = u.nthLargest(2,(tokens.get(T-1).getData()[k]));
         System.out.println("***" + m.labelVocab.name(sentence.labels[T - 1]));
         int backtrace = tokens.get(T-1).getTagPointer() [tokens.get(T-1).getTagVersionPointer()[k][sentence.labels[T - 1]]] [sentence.labels[T - 1]];
 
