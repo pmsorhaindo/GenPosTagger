@@ -65,7 +65,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
             tokens.add(new WordData());
 
             double[][] prevcurr = new double[numLabels][numLabels];
-            double[][] vit = new double[K][numLabels];
+            double[][] vit = new double[K][numLabels]; // should be [K][T][numLabels] no?
             int[][] tagPointers = new int[K][numLabels];
             int[][] tagVPointers = new int[K][numLabels];
             double[][] sprobs = new double[numLabels][numLabels];
@@ -115,39 +115,44 @@ public class ViterbiTableEfficientThird implements IDecoder {
                         boolean found = false;
                         int nextHighestFreeTag = 1;
                         while (!found) {
-                            int maxTag = u.nthLargest(nextHighestFreeTag, sprobs[s]);
-                            if (maxTag != -1 && labelUsageCounter[nextHighestFreeTag-1][maxTag] < K) {
+                            int maxTag = u.nthLargest(nextHighestFreeTag, sprobs[s]); // determine the tag with highest probability
+                            if (maxTag != -1 && labelUsageCounter[nextHighestFreeTag-1][maxTag] < K) { // if no error and highest tag hasn't been overused (K), continue
 
-                                int  usage = labelUsageCounter[nextHighestFreeTag-1][maxTag];
+                                int  usage = labelUsageCounter[nextHighestFreeTag-1][maxTag]; // how many times the maximum tag has been used.
                                 double[] prevCurrLine = ArrayUtil.add(prevcurr[s], tokens.get(i - 1).getData()[usage][maxTag]);
 
-                                //if(usage != 0) sprobs[s][maxTag] = prevCurrLine[maxTag];
-
-                                if(labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])]>=K)
+                                if(usage != 0) // if the maximum tag has been used before swap in the new confidence value in a transition to this tag.
                                 {
-                                    nextHighestFreeTag++;
+                                    sprobs[s][maxTag] = u.nthLargest(usage+1, prevCurrLine);
+                                }
+
+                                if(labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])]>=K) // if the new max has hit max usage skip to next iteration.
+                                {
+                                    nextHighestFreeTag++; // make sure to referr to the next highest max in future
                                     continue;
                                 }
 
-                                tagPointers[j][s] = ArrayUtil.argmax(sprobs[s]);
-                                tagVPointers[j][s] = labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])];
+                                tagPointers[j][s] = ArrayUtil.argmax(sprobs[s]); // back pointer to tag
+                                tagVPointers[j][s] = labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])]; // incorrect - should be back pointer to version of tag.
 
-                                vit[j][s] = sprobs[s][tagPointers[j][s]];
-                                labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])]++;
+                                if(usage == 0) vit[j][s] = sprobs[s][tagPointers[j][s]]; // assigning data this is not overwriting due to the previous viterbi data being held in the previous WordData object.
 
-                                found = true;
-                            } else if (nextHighestFreeTag == numLabels) {
+                                labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])]++; //increment usage counter for the token whose transition we have used.
+
+                                found = true; // indicate to the while loop we have found our next most likely transition probability.
+                            } else if (nextHighestFreeTag == numLabels) { // if we run out out tags throw an error.
                                 System.err.println("Ran out of Tags");
-                                break;
+                                break; // break from while loop in case of error.
                             } else {
-                                nextHighestFreeTag++;
+                                nextHighestFreeTag++; // assuming an issue such as labelUsageCounter being over K for the current token look for the next most likely tag.
                             }
                         }
                     }
                 }
             }
             //u.p(labelUsageCounter);
-            u.p(tagPointers);
+            //u.p(tagPointers);
+            u.p(vit);
             //u.p(tagVPointers);
             tokens.get(i).setData(vit);
             tokens.get(i).setTagPointer(tagPointers);
