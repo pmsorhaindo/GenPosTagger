@@ -86,32 +86,28 @@ public class ViterbiTableEfficientFourth implements IDecoder {
                 sprobs[s] = u.getColumn(prevcurr, s);
             }
 
-            int[] labelUsageCounter = new int[numLabels];
+            int[][] labelUsageCounter = new int[numLabels][numLabels];
             for (int j = 0; j < K; j++) {
 
                 for (int s = 0; s < numLabels; s++) {
-                    if(j>0)
-                    {
-                        double[] prevCurrLine = ArrayUtil.add(origprevcurr[s], tokens.get(i - 1).getData()[j][tagPointers[j-1][s]]);
-                        sprobs[s][tagPointers[j-1][s]] = prevCurrLine[tagPointers[j-1][s]];
-                    }
                     tagPointers[j][s] = ArrayUtil.argmax(sprobs[s]); // back pointer to tag
-                    tagVPointers[j][s] =j; // incorrect - should be back pointer to version of tag.
+                    tagVPointers[j][s] = labelUsageCounter[s][tagPointers[j][s]]; // incorrect - should be back pointer to version of tag.
+
                     vit[j][s] = sprobs[s][tagPointers[j][s]]; // assigning data this is not overwriting due to the previous viterbi data being held in the previous WordData object.
-                    labelUsageCounter[tagPointers[j][s]] = labelUsageCounter[tagPointers[j][s]] + 1;
+
                 }
 
             }
             //u.p(labelUsageCounter);
             u.p(tagPointers);
             u.p(vit);
-            u.p(tagVPointers);
+            //u.p(tagVPointers);
             tokens.get(i).setData(vit);
             tokens.get(i).setTagPointer(tagPointers);
             tokens.get(i).setTagVersionPointer(tagVPointers);
         }
 
-        int k =2;
+        int k =0;
 
         sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T-1).getData()[k]);
         System.out.println("***" + m.labelVocab.name(sentence.labels[T - 1]));

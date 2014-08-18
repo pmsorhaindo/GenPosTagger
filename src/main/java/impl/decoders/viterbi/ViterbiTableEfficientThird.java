@@ -18,7 +18,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
     public ViterbiTableEfficientThird(Model m) {
 
-        this.K = 7;
+        this.K =1;
         this.u = new Util();
         this.m = m;
         this.numLabels = m.labelVocab.size();
@@ -97,7 +97,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
                         int maxTag = u.nthLargest(nextHighestFreeTag, sprobs[s]); // determine the tag with highest probability
                         if (maxTag != -1 && labelUsageCounter[nextHighestFreeTag-1][maxTag] < K) { // if no error and highest tag hasn't been overused (K), continue
 
-                            int  usage = labelUsageCounter[nextHighestFreeTag-1][maxTag]; // how many times the maximum tag has been used.
+                            int  usage = labelUsageCounter[s][maxTag]; // how many times the maximum tag has been used.
                             double[] prevCurrLine = ArrayUtil.add(origprevcurr[s], tokens.get(i - 1).getData()[usage][maxTag]);
 
                             if(usage != 0) // usage != 0 ||  if the maximum tag has been used before swap in the new confidence value in a transition to this tag.
@@ -105,18 +105,18 @@ public class ViterbiTableEfficientThird implements IDecoder {
                                 sprobs[s][maxTag] = prevCurrLine[maxTag];
                             }
 
-                            if(labelUsageCounter[nextHighestFreeTag-1][ArrayUtil.argmax(sprobs[s])]>=K) // if the new max has hit max usage skip to next iteration.
+                            if(labelUsageCounter[s][ArrayUtil.argmax(sprobs[s])]>=K) // if the new max has hit max usage skip to next iteration.
                             {
                                 nextHighestFreeTag++; // make sure to referr to the next highest max in future
                                 continue;
                             }
 
                             tagPointers[j][s] = ArrayUtil.argmax(sprobs[s]); // back pointer to tag
-                            tagVPointers[j][s] = labelUsageCounter[nextHighestFreeTag-1][tagPointers[j][s]]; // back pointer to version of tag.
+                            tagVPointers[j][s] = labelUsageCounter[s][tagPointers[j][s]]; // back pointer to version of tag.
 
                             vit[j][s] = sprobs[s][tagPointers[j][s]]; // assigning data this is not overwriting due to the previous viterbi data being held in the previous WordData object.
 
-                            labelUsageCounter[nextHighestFreeTag-1][tagPointers[j][s]]++; //increment usage counter for the token whose transition we have used.
+                            labelUsageCounter[s][tagPointers[j][s]]++; //increment usage counter for the token whose transition we have used.
                             //u.p(labelUsageCounter);
                             found = true; // indicate to the while loop we have found our next most likely transition probability.
                         } else if (nextHighestFreeTag == numLabels) { // if we run out out tags throw an error.
@@ -137,15 +137,24 @@ public class ViterbiTableEfficientThird implements IDecoder {
             tokens.get(i).setTagVersionPointer(tagVPointers);
         }
 
+        ArrayList<ArrayList<Double>> probs = new ArrayList<>();
         for(int k = 0; k < this.K; k++) {
+            probs.add(new ArrayList<Double>());
             sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
-            System.out.println("***" + m.labelVocab.name(sentence.labels[T - 1]));
+            System.out.print("***" + m.labelVocab.name(sentence.labels[T - 1]));
+            double prob = tokens.get(T - 1).getData()[k][sentence.labels[T - 1]]; //Math.exp(vit[T - 1][sentence.labels[T - 1]]);
+            System.out.println(" with prob: " + prob);
+            probs.get(k).add(prob);
             int vPointer = tokens.get(T - 1).getTagVersionPointer()[k][sentence.labels[T - 1]];
             int backtrace = tokens.get(T - 1).getTagPointer()[k][sentence.labels[T - 1]];
 
             for (int i = T - 2; (i >= 0) && (backtrace != m.startMarker()); i--) { // termination
                 sentence.labels[i] = backtrace;
-                System.out.println("***" + m.labelVocab.name(backtrace));
+                //System.out.println("***" + m.labelVocab.name(backtrace));
+                double newProb = tokens.get(i).getData()[vPointer][backtrace];
+                probs.get(k).add(newProb);
+                System.out.println("***" + m.labelVocab.name(backtrace)
+                        + " with prob: " + newProb);
                 vPointer = tokens.get(i).getTagVersionPointer()[vPointer][backtrace];
                 backtrace = tokens.get(i).getTagPointer()[vPointer][backtrace];
             }

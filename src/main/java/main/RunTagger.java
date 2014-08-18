@@ -45,7 +45,7 @@ public class RunTagger {
 	public boolean justTokenize = false;
 	
 	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF };
-	public Decoder decoder = Decoder.VITERBIEFF;
+	public Decoder decoder = Decoder.VITERBINBEST;//VITERBIEFF;
 	public boolean showConfidence = false;
 
 	PrintStream outputStream;

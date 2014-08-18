@@ -22,7 +22,7 @@ public class ViterbiNBest implements IDecoder {
 	public ViterbiNBest(Model m){
 		
 		u = new Util();
-		this.n = 4;
+		this.n = 27;
 		this.m = m;
 		this.numLabels = m.labelVocab.size();
 		assert numLabels != 0;
@@ -47,29 +47,35 @@ public class ViterbiNBest implements IDecoder {
 		//System.out.println("pre viterbi complete!");
 		
 		int[][] paths = new int[n][sentence.T];
+        double[] confs = new double[n];
 		Sequence maxSeq = new Sequence(m.startMarker(), sequenceProbs,sentence.labels);
 		paths[0] = sentence.labels;
-		
-		Sequence s = new Sequence(); 
-		s = computeCandidates(sentence, maxSeq);
-		sentence.labels = s.getLabelIndexes();
-		//u.p(sentence.labels);
-		paths[1] = sentence.labels;
-		
+        Sequence s = new Sequence();
+
+        if(this.n > 1) {
+            s = computeCandidates(sentence, maxSeq);
+            sentence.labels = s.getLabelIndexes();
+            //u.p(sentence.labels);
+            paths[1] = sentence.labels;
+        }
+
+        if(this.n > 2)
 		for(int i=2; i<this.n; i++)
 		{
 			Sequence x = new Sequence();
 			x = computeCandidates(sentence, s);
 			sentence.labels = x.getLabelIndexes();
-			System.out.println("3rd plus:");
+			//System.out.println("3rd plus:");
 			//u.p(sentence.labels);
 			paths[i] = sentence.labels;
+            confs[i] = x.getProbabilityOfSequence();
 			//u.p(paths);
 			s = x;
 
 		}
 
 		sentence.nPaths= paths;
+        sentence.confidences = confs;
 		 
 	}
 
@@ -106,7 +112,7 @@ public class ViterbiNBest implements IDecoder {
 		}
 		inclusionList.get(bestSeqIndex).generateSegments();
 		exclusionList.add(inclusionList.get(bestSeqIndex));
-		System.out.println("i:"+T+ " "+inclusionList.get(bestSeqIndex).getListOfNodes().toString());
+		System.out.println("i:"+ T+ " "+inclusionList.get(bestSeqIndex).getListOfNodes().toString());
 		return inclusionList.get(bestSeqIndex);
 	}
 	
@@ -157,9 +163,10 @@ public class ViterbiNBest implements IDecoder {
 	}
 
 	public void viterbiNBest(ModelSentence sentence) {
-		int T = sentence.T;
-		sentence.labels = new int[T];
-		for (int i = 0; i<T; i++) sentence.labels[i]=i;
+		// TODO refactor in here
+		//int T = sentence.T;
+		//sentence.labels = new int[T];
+		//for (int i = 0; i<T; i++) sentence.labels[i]=i;
 	}
 	
 	//TODO remove
