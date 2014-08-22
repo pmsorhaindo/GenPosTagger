@@ -8,6 +8,7 @@ import java.util.List;
 import impl.Sentence;
 import util.BasicFileIO;
 import edu.stanford.nlp.util.Pair;
+import util.Util;
 
 
 /**
@@ -26,14 +27,16 @@ public class CoNLLReader {
 		ArrayList<String> curLines = new ArrayList<String>();
 		String line;
 		while ( (line = reader.readLine()) != null ) {
-			if (line.matches("^\\s*$")) {
-				if (curLines.size() > 0) {
+            if (line.matches("^\\s*$")) {
+                //System.out.println(line+" reader matched ");
+                if (curLines.size() > 0) {
 					// Flush
 					sentences.add(sentenceFromLines(curLines));
 					curLines.clear();
 				}
 			} else {
-				curLines.add(line);
+                //System.out.println(line+" reader matched");
+                curLines.add(line);
 			}
 		}
 		if (curLines.size() > 0) {
@@ -48,12 +51,32 @@ public class CoNLLReader {
 	private static Sentence sentenceFromLines(List<String> lines) {
 		Sentence s = new Sentence();
 
-		for (String line : lines) {
-			String[] parts = line.split("\t");
-			assert parts.length == 2;
-			s.tokens.add( parts[0].trim() );
-			s.labels.add( parts[1].trim() );
-		}
+
+        for (String line : lines) {
+            try {
+            String[] parts = line.split("\t");
+
+            assert parts.length == 2;
+            s.tokens.add(parts[0]);
+            s.labels.add(parts[1]);
+            }
+            catch (ArrayIndexOutOfBoundsException e)
+            {
+                try {
+                    String[] parts = line.split(" ");
+                    assert parts.length == 2;
+                    s.tokens.add(parts[0].trim());
+                    s.labels.add(parts[1].trim());
+                }
+                catch(Exception e1)
+                {
+                    System.err.println("asdf");
+                }
+
+
+            }
+        }
+
 		//        System.out.println(s);
 		return s;
 	}

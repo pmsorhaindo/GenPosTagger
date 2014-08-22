@@ -20,6 +20,7 @@ public class ViterbiDiverge implements IDecoder {
 	private Util u;
 	private DecoderUtils dUtils;
 	private Model m;
+    public int n = 3;
 	
 	public ViterbiDiverge(Model m) {
 		
@@ -27,11 +28,13 @@ public class ViterbiDiverge implements IDecoder {
 		assert numLabels != 0;
 		dUtils = new DecoderUtils(m);
 		u = new Util();
+        n = 10;
 		this.m = m;
 	}
 
 	@Override
 	public void decode(ModelSentence sentence) {
+        sentence.K = this.n;
 		splitViterbiDecode(sentence);
 	}
 
@@ -65,14 +68,22 @@ public class ViterbiDiverge implements IDecoder {
 		
 		ArrayList<Integer> vPathArrList = vp.getPaths().get(index);
 		Integer[] vPathArrListObjArr = (Integer[]) vPathArrList.toArray(new Integer[0]);
+
+        //for(Integer x : vPathArrList) System.out.println(x);
+
+
 		int[] vPath = ArrayUtils.toPrimitive(vPathArrListObjArr);
-		int n = 3;
-		int[][] npaths = vp.topNHighestPaths(n, 4);
+
+        int[][] npaths = vp.topNHighestPaths(this.n, sentence.T);
+        double[][] confs = vp.topNHighestConfidences(this.n, sentence.T);
+        double [] pConfs = vp.topNHighestProbabilities(this.n);
 		sentence.nPaths = npaths;
+        sentence.confidences = confs;
+        sentence.pathConfidences = pConfs;
 		//System.out.println("n("+n+") paths:");
 		//Util.p(npaths);
+        //Util.p(arr);
 		sentence.labels = vPath;
-		
 	}
 
 	
@@ -132,6 +143,7 @@ public class ViterbiDiverge implements IDecoder {
 		// multiple paths produced via viterbi methods.
 		int[][] viterbiPaths = new int[numLabels][T];
 		double[] probs = new double[numLabels];
+        double confs[][] = new double[numLabels][T];
 		// for each row in the viterbi matrix (rows = labels : columns = tokens)
 		for (int d = 0; d < vit[T - 1].length; d++) {
 
@@ -142,24 +154,27 @@ public class ViterbiDiverge implements IDecoder {
 			//		+ labelVocab.name(viterbiPaths[d][T - 1]));
 			//System.out.print("***" + labelVocab.name(viterbiPaths[d][T - 1]));
 			//System.out.println(" with prob: " + Math.exp(vit[T - 1][viterbiPaths[d][T - 1]]));
-			double unNormalProb = Math.exp(vit[T - 1][viterbiPaths[d][T - 1]]);
-			
+			double unNormalProb = vit[T - 1][viterbiPaths[d][T - 1]];
+            confs[d][T-1] = vit[T - 1][viterbiPaths[d][T - 1]];
+
 			int backtrace = bptr[T - 1][viterbiPaths[d][T - 1]];
 			for (int i = T - 2; (i >= 0) && (backtrace != m.startMarker()); i--) { // termination
 				// sentence.labels[i] = backtrace;
 				viterbiPaths[d][i] = backtrace;
 				//System.out.println(labelVocab.name(backtrace) + " with prob: "
 				//		+ Math.exp(vit[i][backtrace]));
-				unNormalProb *= Math.exp(vit[i][backtrace]);
-
+				unNormalProb += vit[i][backtrace];
+                confs[d][i] =Math.exp(vit[i][backtrace]); //vit[T - 1][viterbiPaths[d][i]];
 				backtrace = bptr[i][backtrace];
 			}
+
 			assert (backtrace == m.startMarker());
-			probs[d] = unNormalProb;
+			probs[d] = Math.exp(unNormalProb);
 		}
 		//sentence.labels = viterbiPaths[1];
 		vp.addPaths(viterbiPaths);
 		vp.addProbs(probs);
+        vp.addConfs(confs);
 	
 		return vp;
 	}

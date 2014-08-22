@@ -19,7 +19,7 @@ public class Viterbi implements IDecoder {
 	private DecoderUtils dUtils;
 	private Util u;
 	private ArrayList<Double> probs;
-	
+	private final int K = 1;
 	
 	public Viterbi(Model m){
 		
@@ -31,6 +31,7 @@ public class Viterbi implements IDecoder {
 	
 	@Override
 	public void decode(ModelSentence sentence) {
+        sentence.K = K;
 		viterbiDecode(sentence);
 
 	}
@@ -112,8 +113,12 @@ public class Viterbi implements IDecoder {
 		Collections.reverse(this.probs);
 
 		assert (backtrace == m.startMarker());
-		u.p("label sequence");
-		u.p(sentence.labels);
+
+        int[][] npaths = new int[K][sentence.T];
+        npaths[0] = sentence.labels;
+        sentence.nPaths = npaths;
+		//u.p("label sequence");
+		//u.p(sentence.labels);
 	}
 	
 	public void computeVitLabelScores(int t, int prior, ModelSentence sentence,

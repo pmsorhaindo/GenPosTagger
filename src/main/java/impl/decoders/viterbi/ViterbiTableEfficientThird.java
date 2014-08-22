@@ -18,7 +18,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
     public ViterbiTableEfficientThird(Model m) {
 
-        this.K =1;
+        this.K = 1;
         this.u = new Util();
         this.m = m;
         this.numLabels = m.labelVocab.size();
@@ -28,7 +28,9 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
     @Override
     public void decode(ModelSentence sentence) {
+        sentence.K = this.K;
         viterbiTableDecode(sentence);
+
 
     }
 
@@ -137,10 +139,15 @@ public class ViterbiTableEfficientThird implements IDecoder {
             tokens.get(i).setTagVersionPointer(tagVPointers);
         }
 
+        sentence.nPaths = new int[K][sentence.T];
+        double[][] confs = new double[K][sentence.T];
+        double[] pathconfs = new double[K];
+
         ArrayList<ArrayList<Double>> probs = new ArrayList<>();
         for(int k = 0; k < this.K; k++) {
             probs.add(new ArrayList<Double>());
             sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
+            sentence.nPaths[k][T-1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
             System.out.print("***" + m.labelVocab.name(sentence.labels[T - 1]));
             double prob = tokens.get(T - 1).getData()[k][sentence.labels[T - 1]]; //Math.exp(vit[T - 1][sentence.labels[T - 1]]);
             System.out.println(" with prob: " + prob);
@@ -150,6 +157,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
             for (int i = T - 2; (i >= 0) && (backtrace != m.startMarker()); i--) { // termination
                 sentence.labels[i] = backtrace;
+                sentence.nPaths[k][i] = backtrace;
                 //System.out.println("***" + m.labelVocab.name(backtrace));
                 double newProb = tokens.get(i).getData()[vPointer][backtrace];
                 probs.get(k).add(newProb);
@@ -159,7 +167,17 @@ public class ViterbiTableEfficientThird implements IDecoder {
                 backtrace = tokens.get(i).getTagPointer()[vPointer][backtrace];
             }
             System.out.println();
+            //sentence.nPaths[k] = sentence.labels;
+            double totalLogProb = 0;
+            for(int i = 0; i<probs.get(probs.size()-1).size(); i++) {
+                double lastLogProb = probs.get(probs.size()-1).get(i);
+                totalLogProb += lastLogProb;
+                confs[k][i]=Math.exp(lastLogProb);
+            }
+            pathconfs[k] = Math.exp(totalLogProb);
         }
+        sentence.confidences = confs;
+        sentence.pathConfidences = pathconfs;
 
     }
 

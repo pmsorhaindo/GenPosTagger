@@ -20,18 +20,17 @@ public class CrossValidator {
 
 	public CrossValidator() {
 		// produce folds
-		//generate();
+		generate();
 
 	}
 	
 	private void generate(){
-		File path = new File(
-				"/Volumes/LocalDataHD/ps324/Documents/workspace/TwitterNLP/bin/data/");
+		File path = new File("/Volumes/LocalDataHD/ps324/data/CV2/data");
 		FileSplitter splits = new FileSplitter();
 		splits.readInAllTweetsSplit(
-				"/Volumes/LocalDataHD/ps324/Documents/workspace/TwitterNLP/bin/data/daily547.conll",
-				10, 5);
-		trainModels(path, "daily547_split_");
+				"/Volumes/LocalDataHD/ps324/data/gate.conll",
+				10, 1);
+		trainModels(path, "gate_split_");
 		kFold(path);
 	}
 
@@ -40,9 +39,13 @@ public class CrossValidator {
 		String[] directories = path.list(new FilenameFilter() {
 			@Override
 			public boolean accept(File current, String name) {
-				return new File(current, name).isDirectory();
+				return true;//new File(current, name).isDirectory();
 			}
 		});
+        for(String s : directories)
+        {
+            System.out.println(s);
+        }
 
 		for (int i = 0; i < directories.length; i++) {
 			File f = new File(path, directories[i]);
@@ -61,9 +64,8 @@ public class CrossValidator {
 				String target = targetParts[0] + "Run_" + (i + 1) + "/split_"
 						+ (j + 1) + ".model";
 
-				File merged = new File(mergeName);
-				mergeFiles(filesToMerge, merged);
-				String[] args = { merged.toString(), target };
+				mergeFiles(filesToMerge, new File(mergeName));
+                String[] args = { new File(mergeName).toString(), target };
 
 				try {
 					Train.main(args);
@@ -102,7 +104,7 @@ public class CrossValidator {
 
 	public void mergeFiles(File[] files, File mergedFile) {
 
-		FileWriter fstream = null;
+        FileWriter fstream = null;
 		BufferedWriter out = null;
 		try {
 			fstream = new FileWriter(mergedFile, true);
@@ -123,7 +125,7 @@ public class CrossValidator {
 				while ((aLine = in.readLine()) != null) {
 					out.write(aLine);
 					out.newLine();
-				}
+                }
 
 				in.close();
 			} catch (IOException e) {

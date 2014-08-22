@@ -61,14 +61,18 @@ public class Train {
 
 	public void readTrainingSentences(String filename) throws IOException {
 		lSentences = CoNLLReader.readFile(filename);
-		for (Sentence sent : lSentences)
-			numTokens += sent.T();
+        System.out.println("reading!");
+        for (Sentence sent : lSentences) {
+            numTokens += sent.T();
+        }
 	}
 
 	public void constructLabelVocab() {
-		for (Sentence s : lSentences) {
+        System.out.println("constructing label vocab");
+        for (Sentence s : lSentences) {
 			for (String l : s.labels) {
-				model.labelVocab.num(l);
+                System.out.println("label"+l);
+                model.labelVocab.num(l);
 			}
 		}
 		model.labelVocab.lock();

@@ -9,16 +9,12 @@ import impl.features.WordClusterPaths;
 import io.CoNLLReader;
 import io.JsonTweetReader;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.commons.io.FileUtils;
 import util.BasicFileIO;
 import edu.stanford.nlp.util.StringUtils;
 
@@ -32,7 +28,7 @@ public class RunTagger {
 	Tagger tagger;
 	
 	// Commandline I/O-ish options
-	String inputFormat = "auto";
+	String inputFormat = "conll"; //"auto";
 	String outputFormat = "auto"; //"conll";//"auto";
 	int inputField = 1;
 	
@@ -44,9 +40,9 @@ public class RunTagger {
 	public boolean noOutput = false;
 	public boolean justTokenize = false;
 	
-	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF };
-	public Decoder decoder = Decoder.VITERBINBEST;//VITERBIEFF;
-	public boolean showConfidence = false;
+	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF,VITERBIDIV};
+	public Decoder decoder = Decoder.VITERBIEFF;
+	public boolean showConfidence = true;
 
 	PrintStream outputStream;
 	Iterable<Sentence> inputIterable = null;
@@ -60,7 +56,8 @@ public class RunTagger {
 	int oovTokens = 0;
 	int clusterTokensCorrect = 0;
 	int clusterTokens = 0;
-	
+
+
 	public static void die(String message) {
 		// (BTO) I like "assert false" but assertions are disabled by default in java
 		System.err.println(message);
@@ -70,6 +67,18 @@ public class RunTagger {
 		// force UTF-8 here, so don't need -Dfile.encoding
 		this.outputStream = new PrintStream(System.out, true, "UTF-8");
 	}
+
+
+    public RunTagger(String modelfile, String input, Decoder decoder) throws UnsupportedEncodingException {
+        // force UTF-8 here, so don't need -Dfile.encoding
+        this.outputStream = new PrintStream(System.out, true, "UTF-8");
+        this.modelFilename = modelfile;
+        this.inputFilename = input;
+        this.decoder = decoder;
+
+
+    }
+
 	public void detectAndSetInputFormat(String tweetData) throws IOException {
 		JsonTweetReader jsonTweetReader = new JsonTweetReader();
 		if (jsonTweetReader.isJson(tweetData)) {
@@ -80,15 +89,16 @@ public class RunTagger {
 			inputFormat = "text";
 		}
 	}
-	
+
 	public void runTagger() throws IOException, ClassNotFoundException {
 		
 		System.out.println("In Tag mode!");
 		
 		tagger = new Tagger();
 		if (!justTokenize) {
-			tagger.loadModel(modelFilename);			
-		}
+			tagger.loadModel(modelFilename);
+            System.out.println(modelFilename);
+        }
 		
 		if (inputFormat.equals("conll")) { //(true){//
 			runTaggerInEvalMode();
@@ -164,36 +174,35 @@ public class RunTagger {
 			Greedy greedy = new Greedy(tagger.model);
 			greedy.decode(mSent);
 		} else if (decoder == Decoder.VITERBI) {
-			// if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
+			// if (showConfidence) throw new RuntimeException - < Don't do this anymore
 			//System.out.println("Running VITERBI decode()");
 			//tagger.model.viterbiDecode(mSent);
 			IDecoder diverge = new Viterbi(tagger.model);
 			diverge.decode(mSent);
-			// tagger.model.splitViterbiDecode(mSent);
 		} //VITERBINBEST
 		else if (decoder == Decoder.VITERBIARRAY) {
-			// if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
 			//System.out.println("Running VITERBIARRAY decode()");
 			//tagger.model.viterbiDecode(mSent);
 			IDecoder diverge = new ViterbiArrayTree(tagger.model);
 			diverge.decode(mSent);
-			// tagger.model.splitViterbiDecode(mSent);
 		}
 		else if (decoder == Decoder.VITERBINBEST) {
-			// if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
 			//System.out.println("Running VITERBIARRAY decode()");
 			//tagger.model.viterbiDecode(mSent);
 			IDecoder diverge = new ViterbiNBest(tagger.model);
 			diverge.decode(mSent);
-			// tagger.model.splitViterbiDecode(mSent);
 		}
         else if (decoder == Decoder.VITERBIEFF) {
-            // if (showConfidence) throw new RuntimeException("--confidence only works with greedy decoder right now, sorry, yes this is a lame limitation"); <<< I kinda fixed it no? :D MIKEY FOR PRESIDENT!
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
             IDecoder diverge = new ViterbiTableEfficientThird(tagger.model);
             diverge.decode(mSent);
-            // tagger.model.splitViterbiDecode(mSent);
+        }
+        else if (decoder == Decoder.VITERBIDIV) {
+            //System.out.println("Running VITERBIARRAY decode()");
+            //tagger.model.viterbiDecode(mSent);
+            IDecoder diverge = new ViterbiDiverge(tagger.model);
+            diverge.decode(mSent);
         }
 		
 	}
@@ -205,15 +214,15 @@ public class RunTagger {
 		long t0 = System.currentTimeMillis();
 		int n=0;
 
-		List<Sentence> examples = CoNLLReader.readFile(inputFilename); 
-		inputIterable = examples;
-
-		int[][] confusion = new int[tagger.model.numLabels][tagger.model.numLabels];
+		List<Sentence> examples = CoNLLReader.readFile(inputFilename);
+        inputIterable = examples;
+        System.out.println("examples:"+examples.size());
+        //int[][] confusion = new int[tagger.model.numLabels][tagger.model.numLabels];
 		
 		for (Sentence sentence : examples) {
 			n++;
-			
-			ModelSentence mSent = new ModelSentence(sentence.T());
+            System.out.println(sentence.toString());
+            ModelSentence mSent = new ModelSentence(sentence.T());
 			tagger.featureExtractor.computeFeatures(sentence, mSent);
 			goDecode(mSent);
 			
@@ -236,7 +245,16 @@ public class RunTagger {
 		double elapsed = ((double) (System.currentTimeMillis() - t0)) / 1000.0;
 		System.err.printf("%d tweets in %.1f seconds, %.1f tweets/sec\n",
 				n, elapsed, n*1.0/elapsed);
-		
+
+        System.out.println(decoder.toString());
+
+        File results = new File("/Volumes/LocalDataHD/ps324/exp1.txt");
+        FileUtils.writeStringToFile(results,(decoder.toString()+"\n"),true);
+        FileUtils.writeStringToFile(results,""+n+" tweets in "+ elapsed +" seconds, :"+(n*1.0/elapsed)+" tweets/sec\n",true);
+        FileUtils.writeStringToFile(results,""+numTokensCorrect+"/"+numTokens+", correct, "+(numTokensCorrect*1.0 / numTokens)+
+                                    " acc, "+(1 - (numTokensCorrect*1.0 / numTokens)) + " err\n",true);
+
+
 /*		System.err.printf("%d / %d cluster words correct = %.4f acc, %.4f err\n", 
 				oovTokensCorrect, oovTokens,
 				oovTokensCorrect*1.0 / oovTokens,
@@ -356,7 +374,7 @@ public class RunTagger {
 						lSent.tokens.get(t),  
 						tagger.model.labelVocab.name(mSent.labels[t]));
 				if (mSent.confidences != null) {
-					outputStream.printf("\t%s", formatConfidence(mSent.confidences[t]));
+					outputStream.printf("\t%s", formatConfidence(mSent.confidences[0][t]));
 				}
 				outputStream.printf("\n");
 			}
@@ -376,35 +394,39 @@ public class RunTagger {
 	public void outputPrependedTagging(Sentence lSent, ModelSentence mSent, 
 			boolean suppressTags, String inputLine) {
 		// mSent might be null!
-		
-		int T = lSent.T();
-		String[] tokens = new String[T];
-		String[] tags = new String[T];
-		String[] confs = new String[T];
-		for (int t=0; t < T; t++) {
-			tokens[t] = lSent.tokens.get(t);
-			if (!suppressTags) {
-				tags[t] = tagger.model.labelVocab.name(mSent.labels[t]);	
-			}
-			if (showConfidence) {
-				confs[t] = formatConfidence(mSent.confidences[t]);
-			}
-		}
-		
-		StringBuilder sb = new StringBuilder();
-		sb.append(StringUtils.join(tokens));
-		sb.append("\t");
-		if (!suppressTags) {
-			sb.append(StringUtils.join(tags));
-			sb.append("\t");
-		}
-		if (showConfidence) {
-			sb.append(StringUtils.join(confs));
-			sb.append("\t");
-		}
-		sb.append(inputLine);
-		
-		outputStream.println(sb.toString());
+		for (int k = 0; k<mSent.K; k++) {
+            int T = lSent.T();
+            String[] tokens = new String[T];
+            String[] tags = new String[T];
+            String[] confs = new String[T];
+            for (int t = 0; t < T; t++) {
+                tokens[t] = lSent.tokens.get(t);
+                if (!suppressTags) {
+                    tags[t] = tagger.model.labelVocab.name(mSent.nPaths[k][t]);
+                }
+                if (showConfidence) {
+                    confs[t] = formatConfidence(mSent.confidences[k][t]);
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(StringUtils.join(tokens));
+            sb.append("\t");
+            if (!suppressTags) {
+                sb.append(StringUtils.join(tags));
+                sb.append("\t");
+            }
+            if (showConfidence) {
+                sb.append(StringUtils.join(confs));
+                sb.append("\t");
+                sb.append(mSent.pathConfidences[k]);
+                sb.append("\t");
+                sb.append("\t");
+            }
+            sb.append(inputLine);
+
+            outputStream.println(sb.toString());
+        }
 	}
 
 

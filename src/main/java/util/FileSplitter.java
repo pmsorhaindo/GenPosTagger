@@ -33,7 +33,7 @@ public class FileSplitter {
 			ArrayList<String> tweet = new ArrayList<>();
 			while ((sCurrentLine = br.readLine()) != null) {
 
-				if (sCurrentLine.length() < 1) {
+				if (sCurrentLine.length() < 2) {
 					tweets.add(tweet);
 					tweetNum++;
 					tweet = new ArrayList<>();
@@ -74,7 +74,7 @@ public class FileSplitter {
 					splitCount ++;
 					tweetCount = 0;
 				}
-				String sFileName = "/Volumes/LocalDataHD/ps324/Documents/workspace/TwitterNLP/bin/data/Run_"+(i+1)+"/daily547_split_"
+				String sFileName = "/Volumes/LocalDataHD/ps324/data/CV2/data/Run_"+(i+1)+"/gate_split_"
 						+ (splitCount+1) + ".conll";
 				//System.out.println(indexes.get(i).get(j));
 				ArrayList<String> lines = tweets.get(indexes.get(i).get(j));
@@ -88,6 +88,7 @@ public class FileSplitter {
 				tweetCount++;
 			}
 		}
+        System.out.println("");
 
 	}
 
@@ -127,7 +128,6 @@ public class FileSplitter {
 			String sCurrentLine;
 			int fileNum = 1;
 			while ((sCurrentLine = br.readLine()) != null) {
-				//
 				lineCounter++;
 				String sFileName = "/Volumes/LocalDataHD/ps324/Documents/workspace/TwitterNLP/bin/data/daily547_"
 						+ fileNum + ".conll";

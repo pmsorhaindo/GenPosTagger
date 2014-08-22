@@ -9,11 +9,13 @@ import org.apache.commons.lang3.ArrayUtils;
 public class ViterbiPaths {
 	
 	private ArrayList<ArrayList<Integer>> paths;
+    private ArrayList<ArrayList<Double>> confs;
 	private ArrayList<Double> probs;
 	private Util u = new Util();	
 	
 	public ViterbiPaths() {
 		paths = new ArrayList<ArrayList<Integer>>();
+        confs = new ArrayList<ArrayList<Double>>();
 		probs = new ArrayList<Double>();
 	}
 
@@ -24,7 +26,15 @@ public class ViterbiPaths {
 	public void setPaths(ArrayList<ArrayList<Integer>> paths) {
 		this.paths = paths;
 	}
-	
+
+    public ArrayList<ArrayList<Double>> getConfs() {
+        return confs;
+    }
+
+    public void setConfs(ArrayList<ArrayList<Double>> confs) {
+        this.confs = confs;
+    }
+
 	public void addPaths(int[][] viterbiPaths)
 	{
 		for(int i = 0; i<viterbiPaths.length; i++)
@@ -39,6 +49,22 @@ public class ViterbiPaths {
 			}
 		}
 	}
+
+    public void addConfs(double[][] confidences)
+    {
+        for(int i = 0; i<confidences.length; i++)
+        {
+            ArrayList<Double> arr = new ArrayList<Double>();
+            confs.add(arr);
+            for(int j =0; j<confidences[i].length; j++)
+            {
+
+                //System.out.println("viterbi path length: "+viterbiPaths[i].length);
+                confs.get(confs.size()-1).add(confidences[i][j]);
+            }
+        }
+    }
+
 
 	public ArrayList<Double> getProbs() {
 		return probs;
@@ -90,6 +116,20 @@ public class ViterbiPaths {
 		//System.out.println("size of path: "+ pathSize);
 		return limitedPathArr;
 	}
+
+    public double[][] topNHighestConfidences(int n, int pathSize){
+        assert(n < this.confs.size());
+        double[][] limitedPathArr = new double[n][pathSize];
+        for(int i=0; i<n; i++)
+        {
+            double[] probArr = arrayListToPrimitiveDouble(this.probs);
+            int index = u.nthLargest((i+1), probArr);
+            //System.out.println("path "+i+": "+this.paths.get(index).toString());
+            limitedPathArr[i] = arrayListToPrimitiveDouble(this.confs.get(index));
+        }
+        //System.out.println("size of path: "+ pathSize);
+        return limitedPathArr;
+    }
 	
 	
 	public int[] arrayListToPrimitiveInt(ArrayList<Integer> arrObj)

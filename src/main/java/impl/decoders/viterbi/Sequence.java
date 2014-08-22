@@ -16,15 +16,7 @@ public class Sequence {
 	private double probabilityOfSequence;
 	private ArrayList<Sequence> pathSegments = new ArrayList<Sequence>();
 	
-	public ArrayList<Sequence> getPathSegments() {
-		return pathSegments;
-	}
-
-	public void setPathSegments(ArrayList<Sequence> pathSegments) {
-		this.pathSegments = pathSegments;
-	}
-
-	public Sequence() {
+    public Sequence() {
 		
 	}
 
@@ -119,13 +111,22 @@ public class Sequence {
 	public void setProbabilityOfSequence(double probabilityOfSequence) {
 		this.probabilityOfSequence = probabilityOfSequence;
 	}
-	
-	public int get(int i) {
+
+    public ArrayList<Sequence> getPathSegments() {
+        return pathSegments;
+    }
+
+    public void setPathSegments(ArrayList<Sequence> pathSegments) {
+        this.pathSegments = pathSegments;
+    }
+
+
+    public int get(int i) {
 		return this.listOfTags.get(i);
 	}
 	
 	public Sequence getIthPathSegment(int index) {
-		if (index<0 || index >= listOfTags.size()) return null;// TODO check this boundary!!
+		if (index<0 || index >= listOfTags.size()) return null;// TODO boundary exception
 		
 		return pathSegments.get(index);
 	}
@@ -153,6 +154,10 @@ public class Sequence {
 		Util.p(tags);
 		return tags;
 	}
+
+    public int size(){
+        return this.listOfTags.size();
+    }
 	
 	@Override
 	public String toString(){

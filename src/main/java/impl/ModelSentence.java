@@ -12,6 +12,7 @@ import edu.stanford.nlp.util.Pair;
  */
 public class ModelSentence {
 	public int T;
+    public int K;
 
 	/** Runtime inferred, Trainingtime observed.
 	 * dim T
@@ -23,8 +24,10 @@ public class ModelSentence {
 	 */
 	public int[][] nPaths;
 	
-	public double confidences[];
-	
+	public double[][] confidences;
+
+    public double[] pathConfidences;
+
 	/** Runtime observed, Trainingtime observed.
 	 * This is an array-of-arrays of (featID, featValue) pairs.
 	 * dim T, then variable nnz per t.
