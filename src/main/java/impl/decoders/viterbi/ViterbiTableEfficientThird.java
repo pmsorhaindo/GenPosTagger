@@ -16,9 +16,9 @@ public class ViterbiTableEfficientThird implements IDecoder {
     private int K;
     private Util u;
 
-    public ViterbiTableEfficientThird(Model m) {
+    public ViterbiTableEfficientThird(Model m, int returnK) {
 
-        this.K = 1;
+        this.K = returnK;
         this.u = new Util();
         this.m = m;
         this.numLabels = m.labelVocab.size();
@@ -131,8 +131,8 @@ public class ViterbiTableEfficientThird implements IDecoder {
                 }
             }
             //u.p(labelUsageCounter);
-            u.p(tagPointers);
-            u.p(vit);
+            //u.p(tagPointers);
+            //u.p(vit);
             //u.p(tagVPointers);
             tokens.get(i).setData(vit);
             tokens.get(i).setTagPointer(tagPointers);
@@ -148,9 +148,9 @@ public class ViterbiTableEfficientThird implements IDecoder {
             probs.add(new ArrayList<Double>());
             sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
             sentence.nPaths[k][T-1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
-            System.out.print("***" + m.labelVocab.name(sentence.labels[T - 1]));
+            //System.out.print("***" + m.labelVocab.name(sentence.labels[T - 1]));
             double prob = tokens.get(T - 1).getData()[k][sentence.labels[T - 1]]; //Math.exp(vit[T - 1][sentence.labels[T - 1]]);
-            System.out.println(" with prob: " + prob);
+            //System.out.println(" with prob: " + prob);
             probs.get(k).add(prob);
             int vPointer = tokens.get(T - 1).getTagVersionPointer()[k][sentence.labels[T - 1]];
             int backtrace = tokens.get(T - 1).getTagPointer()[k][sentence.labels[T - 1]];
@@ -161,12 +161,12 @@ public class ViterbiTableEfficientThird implements IDecoder {
                 //System.out.println("***" + m.labelVocab.name(backtrace));
                 double newProb = tokens.get(i).getData()[vPointer][backtrace];
                 probs.get(k).add(newProb);
-                System.out.println("***" + m.labelVocab.name(backtrace)
-                        + " with prob: " + newProb);
+                //System.out.println("***" + m.labelVocab.name(backtrace)
+                //        + " with prob: " + newProb);
                 vPointer = tokens.get(i).getTagVersionPointer()[vPointer][backtrace];
                 backtrace = tokens.get(i).getTagPointer()[vPointer][backtrace];
             }
-            System.out.println();
+            //System.out.println();
             //sentence.nPaths[k] = sentence.labels;
             double totalLogProb = 0;
             for(int i = 0; i<probs.get(probs.size()-1).size(); i++) {

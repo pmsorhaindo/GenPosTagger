@@ -90,6 +90,7 @@ public class ViterbiNBest implements IDecoder {
             explored = calculateCandiateSubset(sentence, exclusionList,inclusionList,maxSeq);
         }
 
+
         return null;
     }
 
@@ -194,7 +195,7 @@ public class ViterbiNBest implements IDecoder {
                 Sequence newS = new Sequence(newProb[j], nodeStub);
                 System.out.println(newS.toString());
                 if (!exclusionList.contains(newS)) {
-                    System.out.println("Sequence Added "+newS.getListOfNodes().toString()+" : "+newS.getProbabilityOfSequence());
+                    //System.out.println("Sequence Added "+newS.getListOfNodes().toString()+" : "+newS.getProbabilityOfSequence());
                     tempInclusionList.add(newS);
                 } else {
                     //System.out.println("Sequence Barred! "+newS.getListOfNodes().toString()+" : "+newS.getProbabilityOfSequence());

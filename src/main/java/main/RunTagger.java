@@ -28,12 +28,13 @@ public class RunTagger {
 	Tagger tagger;
 	
 	// Commandline I/O-ish options
-	String inputFormat = "conll"; //"auto";
+	String inputFormat = "auto";//"conll"; //"auto";
 	String outputFormat = "auto"; //"conll";//"auto";
 	int inputField = 1;
 	
 	String inputFilename;
 	String outputFilename;
+    String resultsFile;
 	/** Can be either filename or resource name **/
 	String modelFilename = "src/main/resources/model.20120919";
 
@@ -41,7 +42,8 @@ public class RunTagger {
 	public boolean justTokenize = false;
 	
 	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF,VITERBIDIV};
-	public Decoder decoder = Decoder.VITERBIEFF;
+	public Decoder decoder = Decoder.VITERBINBEST;
+    public int kParam = 1;
 	public boolean showConfidence = true;
 
 	PrintStream outputStream;
@@ -69,12 +71,14 @@ public class RunTagger {
 	}
 
 
-    public RunTagger(String modelfile, String input, Decoder decoder) throws UnsupportedEncodingException {
+    public RunTagger(String modelfile, String input, String expResultsFile, Decoder decoder, int kParam) throws UnsupportedEncodingException {
         // force UTF-8 here, so don't need -Dfile.encoding
         this.outputStream = new PrintStream(System.out, true, "UTF-8");
         this.modelFilename = modelfile;
         this.inputFilename = input;
+        this.kParam = kParam;
         this.decoder = decoder;
+        this.resultsFile = expResultsFile;
 
 
     }
@@ -195,13 +199,13 @@ public class RunTagger {
         else if (decoder == Decoder.VITERBIEFF) {
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
-            IDecoder diverge = new ViterbiTableEfficientThird(tagger.model);
+            IDecoder diverge = new ViterbiTableEfficientThird(tagger.model,kParam);
             diverge.decode(mSent);
         }
         else if (decoder == Decoder.VITERBIDIV) {
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
-            IDecoder diverge = new ViterbiDiverge(tagger.model);
+            IDecoder diverge = new ViterbiDiverge(tagger.model,kParam);
             diverge.decode(mSent);
         }
 		
@@ -217,7 +221,7 @@ public class RunTagger {
 		List<Sentence> examples = CoNLLReader.readFile(inputFilename);
         inputIterable = examples;
         System.out.println("examples:"+examples.size());
-        //int[][] confusion = new int[tagger.model.numLabels][tagger.model.numLabels];
+        int[][] confusion = new int[tagger.model.numLabels][tagger.model.numLabels];
 		
 		for (Sentence sentence : examples) {
 			n++;
@@ -248,11 +252,14 @@ public class RunTagger {
 
         System.out.println(decoder.toString());
 
-        File results = new File("/Volumes/LocalDataHD/ps324/exp1.txt");
-        FileUtils.writeStringToFile(results,(decoder.toString()+"\n"),true);
-        FileUtils.writeStringToFile(results,""+n+" tweets in "+ elapsed +" seconds, :"+(n*1.0/elapsed)+" tweets/sec\n",true);
-        FileUtils.writeStringToFile(results,""+numTokensCorrect+"/"+numTokens+", correct, "+(numTokensCorrect*1.0 / numTokens)+
-                                    " acc, "+(1 - (numTokensCorrect*1.0 / numTokens)) + " err\n",true);
+        File results = new File(this.resultsFile);
+        //FileUtils.writeStringToFile(results,(decoder.toString()+" : "+kParam+" path(s)\n"),true);
+        //FileUtils.writeStringToFile(results,""+n+" tweets in "+ elapsed +" seconds, :"+(n*1.0/elapsed)+" tweets/sec\n",true);
+        //FileUtils.writeStringToFile(results,""+numTokensCorrect+"/"+numTokens+", correct, "+(numTokensCorrect*1.0 / numTokens)+
+        //                            " acc, "+(1 - (numTokensCorrect*1.0 / numTokens)) + " err\n",true);
+
+        FileUtils.writeStringToFile(results,decoder.toString()+","+kParam+","+(numTokensCorrect*1.0 / numTokens)+","
+                +(1 - (numTokensCorrect*1.0 / numTokens))+","+n+","+elapsed+","+(n*1.0/elapsed)+"\n",true);
 
 
 /*		System.err.printf("%d / %d cluster words correct = %.4f acc, %.4f err\n", 

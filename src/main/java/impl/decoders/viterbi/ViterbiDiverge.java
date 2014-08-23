@@ -20,15 +20,15 @@ public class ViterbiDiverge implements IDecoder {
 	private Util u;
 	private DecoderUtils dUtils;
 	private Model m;
-    public int n = 3;
+    public int n = 1;
 	
-	public ViterbiDiverge(Model m) {
+	public ViterbiDiverge(Model m, int returnK) {
 		
 		numLabels = m.labelVocab.size(); // TODO initialize numLabels properly.
 		assert numLabels != 0;
 		dUtils = new DecoderUtils(m);
 		u = new Util();
-        n = 10;
+        n = returnK;
 		this.m = m;
 	}
 

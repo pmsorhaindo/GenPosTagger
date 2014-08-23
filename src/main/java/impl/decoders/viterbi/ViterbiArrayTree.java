@@ -49,7 +49,7 @@ public class ViterbiArrayTree implements IDecoder {
 
         double[] vit = new double[numLabels]; // viterbi Matrix
 
-        double[][] labelScores = new double[((int) Math.pow(N,T))][numLabels];
+        double[][] labelScores = new double[T][numLabels];
         Tree.Node[] frontier =  new Tree.Node[branchLimit]; //TODO store edge nodes in an fixed length array and only progress these nodes,
 		ArrayList<ArrayList<Tree.Node>> leaves = new ArrayList<>();
         //ArrayList<Tree.Node> oldLeaves = new ArrayList<>();
@@ -100,8 +100,8 @@ public class ViterbiArrayTree implements IDecoder {
                     n.setData(newVit, newBptr);
                     prevPathStub.addChild(n);
                     newLeaves.add(n);
-                    System.out.println("--- " + ArrayUtil.argmax((double[]) n.getData()));
-                    System.out.println("*** " + Arrays.toString(n.getPointers()));
+                    //System.out.println("--- " + ArrayUtil.argmax((double[]) n.getData()));
+                    //System.out.println("*** " + Arrays.toString(n.getPointers()));
                 }
             }
             leaves.add(newLeaves);
