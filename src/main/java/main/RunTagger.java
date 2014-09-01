@@ -10,6 +10,7 @@ import io.CoNLLReader;
 import io.JsonTweetReader;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
@@ -17,8 +18,19 @@ import java.util.Scanner;
 import org.apache.commons.io.FileUtils;
 import util.BasicFileIO;
 import edu.stanford.nlp.util.StringUtils;
+import util.Util;
 
 /**
+ *
+ * Modified by ps324
+ *
+ * modifications include:
+ *  - path confidence for the Viterbi approach
+ *  - evaluation for k-Best decoders
+ *  - per Tweet Accuracy
+ *  - adjusting the RunTagger's functionality for a specific cross validation instance.
+ *  - additional decoder support.
+ *
  * Commandline interface to run the Twitter POS tagger with a variety of possible input and output formats.
  * Also does basic evaluation if given labeled input text.
  * 
@@ -28,7 +40,7 @@ public class RunTagger {
 	Tagger tagger;
 	
 	// Commandline I/O-ish options
-	String inputFormat = "auto";//"conll"; //"auto";
+	String inputFormat = "auto"; //"conll"; //"auto";
 	String outputFormat = "auto"; //"conll";//"auto";
 	int inputField = 1;
 	
@@ -42,9 +54,10 @@ public class RunTagger {
 	public boolean justTokenize = false;
 	
 	public static enum Decoder { GREEDY, VITERBI, VITERBIARRAY, VITERBINBEST, VITERBIEFF,VITERBIDIV};
-	public Decoder decoder = Decoder.VITERBINBEST;
-    public int kParam = 1;
+	public Decoder decoder = Decoder.VITERBIDIV;
+    public int kParam = 6;
 	public boolean showConfidence = true;
+    double[] kAccuracy;
 
 	PrintStream outputStream;
 	Iterable<Sentence> inputIterable = null;
@@ -222,7 +235,9 @@ public class RunTagger {
         inputIterable = examples;
         System.out.println("examples:"+examples.size());
         int[][] confusion = new int[tagger.model.numLabels][tagger.model.numLabels];
-		
+        kAccuracy = new double[this.kParam];
+		Arrays.fill(kAccuracy,0);
+
 		for (Sentence sentence : examples) {
 			n++;
             System.out.println(sentence.toString());
@@ -236,7 +251,7 @@ public class RunTagger {
 			//evaluateSentenceTagging(sentence, mSent);
 			//evaluateCompleteSentenceTagging(sentence,mSent);
 			//evaluateSentenceTaggingNPath(sentence, mSent);
-			evaluateCompleteSentenceTaggingNPath(sentence, mSent);
+			kAccuracy = evaluateCompleteSentenceTaggingNPath(sentence, mSent, kAccuracy);
 			//evaluateOOV(sentence, mSent);
 			//getconfusion(sentence, mSent, confusion);
 		}
@@ -258,11 +273,23 @@ public class RunTagger {
         //FileUtils.writeStringToFile(results,""+numTokensCorrect+"/"+numTokens+", correct, "+(numTokensCorrect*1.0 / numTokens)+
         //                            " acc, "+(1 - (numTokensCorrect*1.0 / numTokens)) + " err\n",true);
 
+        // kth Accuracy division by N.
+        for(int i =0; i<kAccuracy.length; i++)
+        {
+            kAccuracy[i] = kAccuracy[i]/n;
+        }
+        String kAccs = Util.arrToCSVString(kAccuracy);
+
+        //kAccs
         FileUtils.writeStringToFile(results,decoder.toString()+","+kParam+","+(numTokensCorrect*1.0 / numTokens)+","
+                +(1 - (numTokensCorrect*1.0 / numTokens))+","+n+","+elapsed+","+(n*1.0/elapsed)+","+kAccs+"\n",true);
+
+
+        /*FileUtils.writeStringToFile(results,decoder.toString()+","+kParam+","+(numTokensCorrect*1.0 / numTokens)+","
                 +(1 - (numTokensCorrect*1.0 / numTokens))+","+n+","+elapsed+","+(n*1.0/elapsed)+"\n",true);
+        */
 
-
-/*		System.err.printf("%d / %d cluster words correct = %.4f acc, %.4f err\n", 
+/*		System.err.printf("%d / %d cluster words correct = %.4f acc, %.4f err\n",
 				oovTokensCorrect, oovTokens,
 				oovTokensCorrect*1.0 / oovTokens,
 				1 - (oovTokensCorrect*1.0 / oovTokens)
@@ -319,12 +346,14 @@ public class RunTagger {
 		numTokens += 1;
 	}
 	
-	public void evaluateCompleteSentenceTaggingNPath(Sentence lSent, ModelSentence mSent) {
+	public double[] evaluateCompleteSentenceTaggingNPath(Sentence lSent, ModelSentence mSent, double[] kAccuracy) {
 		int tempNumTokensCorrect = 0;
 		int maxCorrect = 0;
-		for(int i=0; i<mSent.nPaths.length; i++)
+        int maxCorrectIndex = 0;
+        File results = new File(this.resultsFile+"extraoutput");
+        for(int i=0; i<mSent.nPaths.length; i++)
 		{
-			tempNumTokensCorrect = 0;
+            tempNumTokensCorrect = 0;
 			for (int t=0; t < mSent.T; t++) {
 				int trueLabel = tagger.model.labelVocab.num(lSent.labels.get(t));
 				int predLabel = mSent.nPaths[i][t];
@@ -333,13 +362,26 @@ public class RunTagger {
 			if (tempNumTokensCorrect > maxCorrect)
 			{
 				maxCorrect = tempNumTokensCorrect;
+                maxCorrectIndex = i;
 			}
 		}
 		if(maxCorrect == mSent.T)
 		{
 			numTokensCorrect += 1;
+            kAccuracy[maxCorrectIndex] = kAccuracy[maxCorrectIndex] + 1;
+
+            try {
+                FileUtils.writeStringToFile(results,Integer.toString(maxCorrectIndex)+"\n",true);
+                //FileUtils.writeStringToFile(results, Arrays.toString(mSent.nPaths[i])+"\n", true);
+            }
+            catch(Exception e)
+            {
+                System.err.println("Argh!");
+            }
 		}
+
 		numTokens += 1;
+        return kAccuracy;
 	}
 	
 	public void evaluateSentenceTaggingNPath(Sentence lSent, ModelSentence mSent) {
@@ -360,8 +402,7 @@ public class RunTagger {
 		}
 		numTokensCorrect+=maxCorrect;
 		numTokens +=mSent.T;
-		
-		
+
 	}
 	
 	private String formatConfidence(double confidence) {

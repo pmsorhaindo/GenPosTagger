@@ -25,12 +25,12 @@ public class CrossValidator {
 	}
 	
 	private void generate(){
-		File path = new File("/Volumes/LocalDataHD/ps324/data/CV2/data");
+		File path = new File("/Volumes/LocalDataHD/ps324/data/CV4/data");
 		FileSplitter splits = new FileSplitter();
 		splits.readInAllTweetsSplit(
-				"/Volumes/LocalDataHD/ps324/data/gate.conll",
-				10, 1);
-		trainModels(path, "gate_split_");
+				"/Volumes/LocalDataHD/ps324/data/combCMU.conll",
+				10, 2);
+		trainModels(path, "comb_split_");
 		kFold(path);
 	}
 
@@ -47,7 +47,7 @@ public class CrossValidator {
             System.out.println(s);
         }
 
-		for (int i = 0; i < directories.length; i++) {
+		for (int i = 1; i < directories.length; i++) {
 			File f = new File(path, directories[i]);
 			// System.out.println("file " + i + ": " + f.toString());
 			File files[] = f.listFiles();

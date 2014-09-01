@@ -18,6 +18,17 @@ import org.apache.commons.io.FileUtils;
 
 public class FileSplitter {
 
+    /**
+     *
+     * ps324:
+     *
+     *  This file splits up a conll file for cross validation.
+     *
+     *  Adjusting the numReps parameter can produce multiple cross validation experiments.
+     *
+     *
+     */
+
 	public FileSplitter() {
 
 	}
@@ -74,7 +85,7 @@ public class FileSplitter {
 					splitCount ++;
 					tweetCount = 0;
 				}
-				String sFileName = "/Volumes/LocalDataHD/ps324/data/CV2/data/Run_"+(i+1)+"/gate_split_"
+				String sFileName = "/Volumes/LocalDataHD/ps324/data/CV4/data/Run_"+(i+1)+"/comb_split_"
 						+ (splitCount+1) + ".conll";
 				//System.out.println(indexes.get(i).get(j));
 				ArrayList<String> lines = tweets.get(indexes.get(i).get(j));
@@ -92,7 +103,7 @@ public class FileSplitter {
 
 	}
 
-	public static void split(String fileName, int numSplits) {
+	/*public static void split(String fileName, int numSplits) {
 
 		LineNumberReader lnr;
 		int numOfLines = 0;
@@ -149,7 +160,7 @@ public class FileSplitter {
 			e.printStackTrace();
 		}
 
-	}
+	}*/
 
 	public void byteSplit(String filename) throws Exception {
 		RandomAccessFile raf = new RandomAccessFile(filename, "r");

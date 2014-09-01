@@ -15,10 +15,19 @@ public class ViterbiTableEfficientThird implements IDecoder {
     private int numLabels;
     private int K;
     private Util u;
+    private boolean reduce = false;
 
     public ViterbiTableEfficientThird(Model m, int returnK) {
 
-        this.K = returnK;
+        if (returnK == 2)
+        {
+            reduce = true;
+            this.K = 3;
+
+        }
+        else{
+            this.K = returnK;
+        }
         this.u = new Util();
         this.m = m;
         this.numLabels = m.labelVocab.size();
@@ -52,7 +61,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
         for (int i = 0; i < K; i++) {
             computeVitLabelScores(0, m.startMarker(), sentence, labelScores[i]);
             ArrayUtil.logNormalize(labelScores[i]);
-            for(int s=0;s<numLabels;s++) {
+            for (int s = 0; s < numLabels; s++) {
                 origTagPointer[i][s] = m.startMarker();
                 origTagVPointer[i][s] = 0;
             }
@@ -78,11 +87,10 @@ public class ViterbiTableEfficientThird implements IDecoder {
                 computeVitLabelScores(i, s, sentence, prevcurr[s]);
                 ArrayUtil.logNormalize(prevcurr[s]);
                 origprevcurr[s] = prevcurr[s].clone();
-                prevcurr[s] = ArrayUtil.add(prevcurr[s], tokens.get(i-1).getData()[0][s]);
+                prevcurr[s] = ArrayUtil.add(prevcurr[s], tokens.get(i - 1).getData()[0][s]);
             }
 
-            for(int s = 0; s<numLabels; s++)
-            {
+            for (int s = 0; s < numLabels; s++) {
                 sprobs[s] = u.getColumn(prevcurr, s);
             }
 
@@ -97,17 +105,17 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
                         // nextHighestFreeTag vs MaxTag
                         int maxTag = u.nthLargest(nextHighestFreeTag, sprobs[s]); // determine the tag with highest probability
-                        if (maxTag != -1 && labelUsageCounter[nextHighestFreeTag-1][maxTag] < K) { // if no error and highest tag hasn't been overused (K), continue
+                        if (maxTag != -1 && labelUsageCounter[nextHighestFreeTag - 1][maxTag] < K) { // if no error and highest tag hasn't been overused (K), continue
 
-                            int  usage = labelUsageCounter[s][maxTag]; // how many times the maximum tag has been used.
+                            int usage = labelUsageCounter[s][maxTag]; // how many times the maximum tag has been used.
                             double[] prevCurrLine = ArrayUtil.add(origprevcurr[s], tokens.get(i - 1).getData()[usage][maxTag]);
 
-                            if(usage != 0) // usage != 0 ||  if the maximum tag has been used before swap in the new confidence value in a transition to this tag.
+                            if (usage != 0) // usage != 0 ||  if the maximum tag has been used before swap in the new confidence value in a transition to this tag.
                             {
                                 sprobs[s][maxTag] = prevCurrLine[maxTag];
                             }
 
-                            if(labelUsageCounter[s][ArrayUtil.argmax(sprobs[s])]>=K) // if the new max has hit max usage skip to next iteration.
+                            if (labelUsageCounter[s][ArrayUtil.argmax(sprobs[s])] >= K) // if the new max has hit max usage skip to next iteration.
                             {
                                 nextHighestFreeTag++; // make sure to referr to the next highest max in future
                                 continue;
@@ -139,12 +147,32 @@ public class ViterbiTableEfficientThird implements IDecoder {
             tokens.get(i).setTagVersionPointer(tagVPointers);
         }
 
-        sentence.nPaths = new int[K][sentence.T];
-        double[][] confs = new double[K][sentence.T];
-        double[] pathconfs = new double[K];
+        double[][] confs;
+        double[] pathconfs;
+
+        if (!reduce)
+        {
+            sentence.nPaths = new int[K][sentence.T];
+            confs = new double[K][sentence.T];
+            pathconfs = new double[K];
+        }
+        else
+        {
+            sentence.nPaths = new int[K-1][sentence.T];
+            confs = new double[K-1][sentence.T];
+            pathconfs = new double[K-1];
+        }
 
         ArrayList<ArrayList<Double>> probs = new ArrayList<>();
-        for(int k = 0; k < this.K; k++) {
+        int returnLimit;
+        if(reduce){
+            returnLimit = this.K -1;
+        }
+        else{
+            returnLimit = this.K;
+        }
+
+        for(int k = 0; k < returnLimit; k++) {
             probs.add(new ArrayList<Double>());
             sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
             sentence.nPaths[k][T-1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);
@@ -176,6 +204,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
             }
             pathconfs[k] = Math.exp(totalLogProb);
         }
+        u.p(sentence.labels);
         sentence.confidences = confs;
         sentence.pathConfidences = pathconfs;
 

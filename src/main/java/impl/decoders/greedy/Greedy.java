@@ -16,6 +16,7 @@ public class Greedy  implements IDecoder {
 	private Util u;
 	private DecoderUtils dUtils;
 	private int numLabels;
+    private final int K = 1;
 	
 	public Greedy(Model m) {
 		
@@ -28,6 +29,7 @@ public class Greedy  implements IDecoder {
 
 	@Override
 	public void decode(ModelSentence sentence) {
+        sentence.K = K;
 		greedyDecode(sentence,false); //TODO marshall params for decode.
 		
 	}
@@ -55,7 +57,7 @@ public class Greedy  implements IDecoder {
 
 		if (storeConfidences)
 			//TODO will need an extra dimension for multi-path greedy.
-			sentence.confidences = new double[T];
+			sentence.confidences = new double[this.K][T];
 
 		double[] labelScores = new double[numLabels];
 		for (int t = 0; t < T; t++) {
@@ -67,9 +69,13 @@ public class Greedy  implements IDecoder {
 				ArrayMath.expInPlace(labelScores);
 				double Z = ArrayMath.sum(labelScores);
 				ArrayMath.multiplyInPlace(labelScores, 1.0 / Z);
-				sentence.confidences[t] = labelScores[sentence.labels[t]];
+				sentence.confidences[this.K][t] = labelScores[sentence.labels[t]];
 			}
 		}
+
+        int[][] npaths = new int[K][sentence.T];
+        npaths[0] = sentence.labels;
+        sentence.nPaths = npaths;
 	}
 
 	/** Adds into labelScores **/
