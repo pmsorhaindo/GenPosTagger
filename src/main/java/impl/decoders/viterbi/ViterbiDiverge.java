@@ -14,6 +14,14 @@ import util.Util;
 import util.ViterbiPaths;
 import edu.berkeley.nlp.util.ArrayUtil;
 
+/**
+ * @author ps324
+ *
+ * This class implements the Divergent approach as discussed in the Generalising POS tagger outputs report.
+ *
+ *
+ */
+
 public class ViterbiDiverge implements IDecoder {
 	
 	private int numLabels;
@@ -32,6 +40,8 @@ public class ViterbiDiverge implements IDecoder {
 		this.m = m;
 	}
 
+
+    // Interface call
 	@Override
 	public void decode(ModelSentence sentence) {
         sentence.K = this.n;
@@ -122,10 +132,12 @@ public class ViterbiDiverge implements IDecoder {
 				ArrayUtil.logNormalize(prevcurr[s]);
 				prevcurr[s] = ArrayUtil.add(prevcurr[s], labelScores[s]);
 			}
-			//System.out.println("prevcurr: ");
-			//u.p(prevcurr);
-			for (int s = 0; s < numLabels; s++) {
+
+            // Calculate maximum transition for each label.
+            for (int s = 0; s < numLabels; s++) {
 				double[] sprobs = u.getColumn(prevcurr, s);
+                // if the approach should diverge at the point take the second most like transition
+                // This happens for each token, and a run is also executed without a divergence
 				if (t == divergePoint) {
 					bptr[t][s] = u.nthLargest(2, sprobs);
 				} else {
@@ -137,23 +149,16 @@ public class ViterbiDiverge implements IDecoder {
 			labelScores = vit[t];
 		}
 
-		//System.out.print("vit[][] = ");
-		//u.p(vit);
-		
 		// multiple paths produced via viterbi methods.
 		int[][] viterbiPaths = new int[numLabels][T];
 		double[] probs = new double[numLabels];
         double confs[][] = new double[numLabels][T];
 		// for each row in the viterbi matrix (rows = labels : columns = tokens)
+
+        // BACKTRACE using the backpointers to recover the viterbi path - as well as the most likely path for each final token.
 		for (int d = 0; d < vit[T - 1].length; d++) {
 
-			// sentence.labels[T-1] = u.nthLargest(d, vit[T-1]); //ArrayUtil.argmax(vit[T-1]);
 			viterbiPaths[d][T - 1] = u.nthLargest(d + 1, vit[T - 1]);
-			//Util.p(vit[T - 1]);
-			//System.out.println("` " + viterbiPaths[d][T - 1] + " asd "
-			//		+ labelVocab.name(viterbiPaths[d][T - 1]));
-			//System.out.print("***" + labelVocab.name(viterbiPaths[d][T - 1]));
-			//System.out.println(" with prob: " + Math.exp(vit[T - 1][viterbiPaths[d][T - 1]]));
 			double unNormalProb = vit[T - 1][viterbiPaths[d][T - 1]];
             confs[d][T-1] = vit[T - 1][viterbiPaths[d][T - 1]];
 
@@ -161,8 +166,6 @@ public class ViterbiDiverge implements IDecoder {
 			for (int i = T - 2; (i >= 0) && (backtrace != m.startMarker()); i--) { // termination
 				// sentence.labels[i] = backtrace;
 				viterbiPaths[d][i] = backtrace;
-				//System.out.println(labelVocab.name(backtrace) + " with prob: "
-				//		+ Math.exp(vit[i][backtrace]));
 				unNormalProb += vit[i][backtrace];
                 confs[d][i] =Math.exp(vit[i][backtrace]); //vit[T - 1][viterbiPaths[d][i]];
 				backtrace = bptr[i][backtrace];
@@ -171,7 +174,8 @@ public class ViterbiDiverge implements IDecoder {
 			assert (backtrace == m.startMarker());
 			probs[d] = Math.exp(unNormalProb);
 		}
-		//sentence.labels = viterbiPaths[1];
+
+        // All paths are stored with their probabilities.
 		vp.addPaths(viterbiPaths);
 		vp.addProbs(probs);
         vp.addConfs(confs);

@@ -9,16 +9,25 @@ import util.Util;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class ViterbiTableEfficientThird implements IDecoder {
+/**
+ * @author ps324
+ *
+ * This class implements the Greedy Beam approach as discussed in the Generalising POS tagger outputs report.
+ *
+ *
+ */
+
+public class GreedyBeam implements IDecoder {
 
     private Model m;
     private int numLabels;
-    private int K;
+    private int K; // number of tag sequences to return
     private Util u;
-    private boolean reduce = false;
+    private boolean reduce = false; // K = 2 bug.
 
-    public ViterbiTableEfficientThird(Model m, int returnK) {
+    public GreedyBeam(Model m, int returnK) {
 
+        // K = 2 bug
         if (returnK == 2)
         {
             reduce = true;
@@ -35,6 +44,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
     }
 
+    // Interface call
     @Override
     public void decode(ModelSentence sentence) {
         sentence.K = this.K;
@@ -67,6 +77,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
             }
         }
 
+        // Initial start token.
         tokens.add(new WordData());
         tokens.get(0).setData(labelScores);
         tokens.get(0).setTagPointer(origTagPointer);
@@ -75,7 +86,9 @@ public class ViterbiTableEfficientThird implements IDecoder {
         for (int i = 1; i < T; i++) {
             tokens.add(new WordData());
 
+            // Transition matrix
             double[][] prevcurr = new double[numLabels][numLabels];
+            // Path scores
             double[][] vit = new double[K][numLabels]; // should be [K][T][numLabels] no?
             int[][] tagPointers = new int[K][numLabels];
             int[][] tagVPointers = new int[K][numLabels];
@@ -101,7 +114,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
 
                     boolean found = false;
                     int nextHighestFreeTag = 1;
-                    while (!found) {
+                    while (!found) { // Find next maximum tag that hasn't been used K times.
 
                         // nextHighestFreeTag vs MaxTag
                         int maxTag = u.nthLargest(nextHighestFreeTag, sprobs[s]); // determine the tag with highest probability
@@ -163,6 +176,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
             pathconfs = new double[K-1];
         }
 
+        // K = 2 bug.
         ArrayList<ArrayList<Double>> probs = new ArrayList<>();
         int returnLimit;
         if(reduce){
@@ -172,6 +186,7 @@ public class ViterbiTableEfficientThird implements IDecoder {
             returnLimit = this.K;
         }
 
+        // BACK TRACE TO RECOVER PATH
         for(int k = 0; k < returnLimit; k++) {
             probs.add(new ArrayList<Double>());
             sentence.labels[T - 1] = ArrayUtil.argmax(tokens.get(T - 1).getData()[k]);

@@ -16,6 +16,14 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import util.FileSplitter;
 
+/**
+ * @author ps324
+ *
+ * This class produces the cross validation folds, training the models used by the Experiment class.
+ * It also makes critical use of the FileSplitter class.
+ *
+ */
+
 public class CrossValidator {
 
 	public CrossValidator() {

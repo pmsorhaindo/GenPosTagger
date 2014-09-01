@@ -13,7 +13,6 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Scanner;
 
 import org.apache.commons.io.FileUtils;
 import util.BasicFileIO;
@@ -212,7 +211,7 @@ public class RunTagger {
         else if (decoder == Decoder.VITERBIEFF) {
             //System.out.println("Running VITERBIARRAY decode()");
             //tagger.model.viterbiDecode(mSent);
-            IDecoder diverge = new ViterbiTableEfficientThird(tagger.model,kParam);
+            IDecoder diverge = new GreedyBeam(tagger.model,kParam);
             diverge.decode(mSent);
         }
         else if (decoder == Decoder.VITERBIDIV) {
@@ -350,7 +349,8 @@ public class RunTagger {
 		int tempNumTokensCorrect = 0;
 		int maxCorrect = 0;
         int maxCorrectIndex = 0;
-        File results = new File(this.resultsFile+"extraoutput");
+        // Debugging greedy outperformance
+        //File results = new File(this.resultsFile+"extraoutput");
         for(int i=0; i<mSent.nPaths.length; i++)
 		{
             tempNumTokensCorrect = 0;
@@ -370,14 +370,15 @@ public class RunTagger {
 			numTokensCorrect += 1;
             kAccuracy[maxCorrectIndex] = kAccuracy[maxCorrectIndex] + 1;
 
+            /* DEBUGGING - Greedy outperformance
             try {
-                FileUtils.writeStringToFile(results,Integer.toString(maxCorrectIndex)+"\n",true);
+                //FileUtils.writeStringToFile(results,Integer.toString(maxCorrectIndex)+"\n",true);
                 //FileUtils.writeStringToFile(results, Arrays.toString(mSent.nPaths[i])+"\n", true);
             }
             catch(Exception e)
             {
-                System.err.println("Argh!");
-            }
+                System.err.println("File failed to write!");
+            }*/
 		}
 
 		numTokens += 1;
